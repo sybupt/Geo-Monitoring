@@ -167,6 +167,7 @@ class FeedingPlanInput(BaseModel):
             "government",
             "tourism_bureau",
             "wechat",
+            "wechat_personal",
         ]
     ] = Field(min_items=1, max_items=8)
     business_keywords: str = Field(default="", max_length=2000)
