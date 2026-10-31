@@ -116,6 +116,13 @@
           <a v-if="PLATFORM_URLS[asset.channel]" :href="PLATFORM_URLS[asset.channel]" target="_blank" rel="noopener" class="btn">
             跳转{{ CHANNELS[asset.channel] }}发布 ↗
           </a>
+<span v-else-if="asset.channel === 'wechat_personal'" class="hint">📱 请在微信朋友圈发布</span>
+<template v-else>
+  <a v-for="pp in PARTNER_PLATFORMS" :key="pp.key" :href="pp.url" target="_blank" rel="noopener" class="btn">
+    跳转{{ pp.name }} ↗
+  </a>
+</template>
+
           <a class="btn" :href="`/api/feeding-assets/${asset.id}/download`" download>下载素材包</a>
         </div>
       </div>
@@ -149,6 +156,11 @@ const PLATFORM_URLS = {
   baidu: 'https://baijiahao.baidu.com',
   wechat: 'https://mp.weixin.qq.com',
 }
+
+const PARTNER_PLATFORMS = [
+  { key: 'partner_wl', name: '恩施州文旅局官网', url: 'https://example.gov.cn/wl' },
+  { key: 'partner_gov', name: '恩施市政府网站', url: 'https://example.gov.cn/gov' },
+]
 
 const CHANNEL_THEMES = {
   wechat_personal: '#07c160',
@@ -353,4 +365,6 @@ textarea { width: 100%; }
 .preview-content :deep(li) { margin: 4px 0; }
 .preview-content :deep(strong) { font-weight: 700; }
 .preview-content { font-size: 14.5px; color: #26332e; line-height: 1.7; }
+.hint { color: #94a3b8; font-size: 13px; padding: 9px 0; display: inline-block; }
+
 </style>
