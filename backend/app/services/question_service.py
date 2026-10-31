@@ -1,80 +1,53 @@
 import json
-
-from openai import OpenAI, OpenAIError
-
-from app.services.monitor_service import PROVIDERS
+import re
+from app.services.monitor_service import PROVIDERS, ask_text
 
 
-def generate_questions(business: dict, provider_id: str, count: int) -> list[dict]:
-    provider = PROVIDERS.get(provider_id)
-    if provider is None:
-        raise ValueError("不支持的问题生成模型")
-    if not provider["key"]:
-        raise ValueError(f"{provider['label']} 未配置 API 密钥")
+def generate_questions(business_data, provider_id, count):
+    """用 AI 生成企业相关的监测问题，返回 [{'text','category'}]"""
+    if provider_id not in PROVIDERS:
+        raise ValueError(f"未知模型：{provider_id}")
+    if not PROVIDERS[provider_id]["key"]:
+        raise ValueError(f"请先配置 {PROVIDERS[provider_id]['label']} 的 API 密钥")
 
-    client = OpenAI(api_key=provider["key"], base_url=provider["base_url"])
+    name = business_data.get("name", "")
+    region = business_data.get("region", "")
+    category = business_data.get("category", "")
+
+    prompt = f"""你是本地生活搜索专家。请站在真实用户的角度，列出用户可能向 AI（如豆包、DeepSeek、Kimi）提问的、关于「{name}」及其所在地区的问题。
+
+企业信息：
+- 名称：{name}
+- 地域：{region or '未提供'}
+- 品类：{category or '未提供'}
+
+要求：
+1. 共 {count} 个问题
+2. 覆盖：好吃/推荐、干净卫生、适合带娃、本地人推荐、性价比、停车/交通、营业时间、特色菜等角度
+3. 每个问题要像真实用户会问的自然语言
+4. 适当融入地域名（如"{region}哪里..."）
+
+请严格按照以下 JSON 数组格式输出（不要输出其他内容）：
+[{{"text": "问题内容", "category": "问题分类"}}]"""
     try:
-        response = client.chat.completions.create(
-            model=provider["model"],
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "你是搜索意图研究员。仅根据提供的企业资料生成真实用户可能输入的"
-                        "搜索问题，不要在问题中预设或夸大企业优势。输出 JSON 数组，"
-                        "每项格式为 {\"question\": \"...\", \"category\": \"...\"}，不要输出其他文字。"
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": json.dumps(
-                        {
-                            "enterprise": business,
-                            "required_count": count,
-                            "requirements": [
-                                "覆盖了解、比较、推荐、具体服务等不同搜索意图",
-                                "自然地包含地区或行业信息，避免重复和品牌强行植入",
-                                "每个问题可独立用于模型回答监测",
-                            ],
-                        },
-                        ensure_ascii=False,
-                    ),
-                },
-            ],
-        )
-    except OpenAIError as exc:
-        raise RuntimeError(
-            f"{provider['label']} 问题生成请求失败，请检查密钥、网络和模型配置"
-        ) from exc
-    content = response.choices[0].message.content
-    if not content:
-        raise RuntimeError(f"{provider['label']} 未返回问题候选")
-    start, end = content.find("["), content.rfind("]")
-    if start < 0 or end < start:
-        raise RuntimeError(f"{provider['label']} 返回内容不是有效 JSON 数组")
-    try:
-        values = json.loads(content[start : end + 1])
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(f"{provider['label']} 返回的问题 JSON 无法解析") from exc
-    if not isinstance(values, list):
-        raise RuntimeError("问题生成结果必须是 JSON 数组")
+        raw = ask_text(provider_id, prompt)
+    except Exception as exc:
+        raise RuntimeError(f"问题生成失败：{exc}") from exc
 
-    candidates = []
-    seen = set()
-    for value in values:
-        if isinstance(value, str):
-            text, category = value.strip(), ""
-        elif isinstance(value, dict):
-            text = str(value.get("question", "")).strip()
-            category = str(value.get("category", "")).strip()
-        else:
-            continue
-        key = text.casefold()
-        if text and key not in seen:
-            candidates.append({"text": text, "category": category or None})
-            seen.add(key)
-        if len(candidates) >= count:
-            break
-    if not candidates:
-        raise RuntimeError("模型没有生成可用的问题候选")
-    return candidates
+    items = _parse_array(raw)
+    return [{"text": i.get("text", ""), "category": i.get("category", "")} for i in items][:count]
+
+
+def _parse_array(raw):
+    raw = raw.strip()
+    if raw.startswith("```"):
+        raw = re.sub(r"^```[a-zA-Z]*\s*", "", raw)
+        raw = re.sub(r"\s*```$", "", raw)
+    try:
+        data = json.loads(raw)
+        return data if isinstance(data, list) else []
+    except Exception:
+        match = re.search(r"\[.*\]", raw, re.DOTALL)
+        if match:
+            return json.loads(match.group(0))
+        return []

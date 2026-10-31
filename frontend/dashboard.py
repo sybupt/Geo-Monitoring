@@ -178,14 +178,15 @@ with st.sidebar:
     st.markdown("**模型连接**")
     for provider in providers:
         status = "已配置密钥" if provider["configured"] else "未配置密钥"
-        st.caption(f"{'🟢' if provider['configured'] else '⚪'} {provider['name']} · {status}")
+        st.caption(f"{'🟢' if provider['configured'] else '⚪'} {provider['label']} · {status}")
     st.divider()
     st.caption(f"API 服务 · `{API}`")
     workspace = st.radio(
-        "工作台",
-        ["效果总览", "投喂中心", "问题工厂", "检测报告"],
-        label_visibility="collapsed",
+    "工作台",
+    ["问题工厂", "投喂中心", "检测报告", "效果总览"],
+    label_visibility="collapsed",
     )
+
 
 try:
     overview = api_get("/api/dashboard/overview", {"business_id": business_id})

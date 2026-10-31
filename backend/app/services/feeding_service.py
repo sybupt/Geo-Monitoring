@@ -1,143 +1,94 @@
-import json
-from collections.abc import Sequence
-
-from openai import OpenAI, OpenAIError
-
-from app.models import Business
-from app.services.monitor_service import PROVIDERS
-
+from app.services.monitor_service import PROVIDERS, ask_text
 
 CHANNEL_LABELS = {
+    "wechat_personal": "微信个人号",
     "rednote": "小红书",
     "zhihu": "知乎",
     "baidu": "百度",
     "google": "Google",
-    "official_site": "企业官网",
-    "government": "政府平台",
-    "tourism_bureau": "文旅局官网",
+    "official_site": "官网",
+    "government": "政府网站",
+    "tourism_bureau": "文旅局",
     "wechat": "微信公众号",
 }
 
-CHANNEL_GUIDANCE = {
-    "rednote": "小红书笔记：生活化、易读，有标题、正文、话题标签建议；避免硬广和虚构体验。",
-    "zhihu": "知乎回答或文章：围绕用户问题提供有信息量、可信的内容，避免伪装成用户评价。",
-    "baidu": "百度内容：适合百度搜索生态的信息稿，结构清晰、关键词自然，不堆砌关键词。",
-    "google": "Google 搜索生态内容：提供清晰的网页标题、摘要和正文建议；不声称可以保证排名或收录。",
-    "official_site": "企业官网：正式、准确的网页标题和正文，适合官网内容编辑器。",
-    "government": "政府平台投稿稿件：客观、规范、可核实，适合提交审核，不得假称政府背书或已获发布。",
-    "tourism_bureau": "文旅局官网投稿稿件：突出与文旅相关的真实信息，语气正式，适合投稿审核，不得假称官方发布。",
-    "wechat": "微信公众号文章：适合公众号图文排版，提供标题、分段正文和摘要，不编造经历或数据。",
+CHANNEL_HINTS = {
+    "wechat_personal": "微信个人号/朋友圈文案风格：亲切、简短、口语化、适合熟人传播",
+    "rednote": "小红书笔记风格：口语化、带 emoji、分点、突出体验和种草点",
+    "zhihu": "知乎长文风格：专业、有逻辑、带分析，适合被 AI 引用为权威来源",
+    "baidu": "百度百科/问答风格：客观、结构化、信息密度高",
+    "google": "面向搜索引擎的网页风格：标题清晰、段落分明、事实具体",
+    "official_site": "企业官网风格：正式、可信、信息完整",
+    "government": "政务信息风格：客观、规范、突出官方属性",
+    "tourism_bureau": "文旅推介风格：突出地域特色、体验、口碑",
+    "wechat": "微信公众号推文风格：标题吸引、排版友好、有号召力",
 }
 
 
-def build_assets(
-    business: Business,
-    channels: Sequence[str],
-    brief: dict[str, str],
-    provider_id: str,
-) -> list[dict[str, str]]:
-    provider = PROVIDERS.get(provider_id)
-    if provider is None:
-        raise ValueError("不支持的文案生成模型")
-    if not provider["key"]:
-        raise ValueError(f"{provider['label']} 未配置 API 密钥")
-    if not channels or any(channel not in CHANNEL_GUIDANCE for channel in channels):
-        raise ValueError("请选择支持的平台")
+def build_assets(business, channels, brief, provider_id):
+    if provider_id not in PROVIDERS:
+        raise ValueError(f"未知模型：{provider_id}")
+    if not PROVIDERS[provider_id]["key"]:
+        raise ValueError(f"请先配置 {PROVIDERS[provider_id]['label']} 的 API 密钥")
 
-    enterprise_facts = {
-        "name": business.name or "",
-        "alias": business.alias or "",
-        "region": business.region or "",
-        "category": business.category or "",
-        "description": business.description or "",
-        "selling_points": business.selling_points or "",
-        "evidence": business.evidence or "",
-        "website": business.website or "",
-    }
-    requested_channels = [
-        {
+    business_name = business.name
+    region = business.region or ""
+    category = business.category or ""
+    keywords = brief.get("business_keywords", "")
+    activity = brief.get("activity_name", "")
+    points = brief.get("promotional_points", "")
+    event_time = brief.get("event_time", "")
+    event_location = brief.get("event_location", "")
+    event_desc = brief.get("event_description", "")
+
+    assets = []
+    for channel in channels:
+        hint = CHANNEL_HINTS.get(channel, "通用风格")
+        prompt = f"""你是 GEO（生成式引擎优化）内容专家。请为「{business_name}」写一篇适合发布在{CHANNEL_LABELS.get(channel, channel)}渠道的文章。
+
+企业信息：
+- 名称：{business_name}
+- 地域：{region}
+- 品类：{category}
+- 关键词：{keywords or '无'}
+- 活动名称：{activity or '无'}
+- 宣传点：{points or '无'}
+- 事件时间：{event_time or '无'}
+- 事件地点：{event_location or '无'}
+- 事件描述：{event_desc or '无'}
+
+写作要求：
+1. 风格：{hint}
+2. 目标：让内容客观、可信、信息具体，方便 AI 生成引擎（豆包/DeepSeek/Kimi）在回答相关问题时引用
+3. 自然地融入企业名称、地域、品类等关键信息
+4. 不要虚构事实、不要夸大宣传
+
+请严格按照以下 JSON 格式输出（不要输出其他内容）：
+{{"title": "文章标题", "content": "文章正文"}}"""
+        try:
+            raw = ask_text(provider_id, prompt)
+        except Exception as exc:
+            raise RuntimeError(f"{CHANNEL_LABELS.get(channel, channel)}素材生成失败：{exc}") from exc
+        data = _parse_json(raw)
+        assets.append({
             "channel": channel,
-            "platform": CHANNEL_LABELS[channel],
-            "format": CHANNEL_GUIDANCE[channel],
-        }
-        for channel in channels
-    ]
-    prompt_data = {
-        "enterprise": enterprise_facts,
-        "campaign_input": brief,
-        "requested_platforms": requested_channels,
-    }
-    try:
-        response = OpenAI(
-            api_key=provider["key"],
-            base_url=provider["base_url"],
-        ).chat.completions.create(
-            model=provider["model"],
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "你是中文内容编辑，负责为不同平台起草待人工审核的企业图文素材。"
-                        "只使用输入中明确提供的事实；不得编造地址、时间、价格、荣誉、"
-                        "效果、用户体验、政府背书或已经发生的发布。输入信息不足时，"
-                        "使用中性表达或标出需补充的信息，不要猜测。按每个平台的格式要求"
-                        "分别撰写，正文可使用 Markdown。只输出 JSON 对象，格式为 "
-                        "{\"assets\":[{\"channel\":\"输入中的平台代码\","
-                        "\"title\":\"标题\",\"content\":\"正文\"}]}，不要输出其他文字。"
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": json.dumps(prompt_data, ensure_ascii=False),
-                },
-            ],
-        )
-    except OpenAIError as exc:
-        raise RuntimeError(
-            f"{provider['label']} 文案生成请求失败，请检查密钥、网络和模型配置"
-        ) from exc
+            "title": data.get("title", f"{business_name} - {CHANNEL_LABELS.get(channel, channel)}"),
+            "content": data.get("content", raw),
+        })
+    return assets
 
-    content = response.choices[0].message.content
-    if not content:
-        raise RuntimeError(f"{provider['label']} 未返回投喂文案")
-    start, end = content.find("{"), content.rfind("}")
-    if start < 0 or end < start:
-        raise RuntimeError(f"{provider['label']} 返回内容不是有效 JSON 对象")
-    try:
-        payload = json.loads(content[start : end + 1])
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(f"{provider['label']} 返回的文案 JSON 无法解析") from exc
-    if not isinstance(payload, dict) or not isinstance(payload.get("assets"), list):
-        raise RuntimeError("文案生成结果必须包含 assets 数组")
 
-    generated = {}
-    requested_ids = set(channels)
-    for item in payload["assets"]:
-        if not isinstance(item, dict):
-            continue
-        channel = item.get("channel")
-        title = item.get("title")
-        body = item.get("content")
-        if (
-            isinstance(channel, str)
-            and channel in requested_ids
-            and isinstance(title, str)
-            and title.strip()
-            and isinstance(body, str)
-            and body.strip()
-        ):
-            if channel in generated:
-                raise RuntimeError(
-                    f"{provider['label']} 为{CHANNEL_LABELS[channel]}返回了重复文案"
-                )
-            generated[channel] = {
-                "channel": channel,
-                "title": title.strip(),
-                "content": body.strip(),
-            }
-    missing = [CHANNEL_LABELS[channel] for channel in channels if channel not in generated]
-    if missing:
-        raise RuntimeError(
-            f"{provider['label']} 未生成完整的平台文案：{'、'.join(missing)}"
-        )
-    return [generated[channel] for channel in channels]
+def _parse_json(raw):
+    import json
+    import re
+    raw = raw.strip()
+    if raw.startswith("```"):
+        raw = re.sub(r"^```[a-zA-Z]*\s*", "", raw)
+        raw = re.sub(r"\s*```$", "", raw)
+    try:
+        return json.loads(raw)
+    except Exception:
+        match = re.search(r"\{.*\}", raw, re.DOTALL)
+        if match:
+            return json.loads(match.group(0))
+        return {}

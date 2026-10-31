@@ -1,6 +1,8 @@
-openai
-python-dotenv
 fastapi
-uvicorn
+uvicorn[standard]
 sqlalchemy
+apscheduler
+python-dotenv
+openai
+requests
 python-multipart

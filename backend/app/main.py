@@ -16,17 +16,11 @@ from starlette.responses import FileResponse, Response
 from app.database import engine, Base, SessionLocal
 import app.models
 from app.models import (
-    Business,
-    EffectReport,
-    FeedingAsset,
-    FeedingImage,
-    FeedingPlan,
-    MonitorRun,
-    MonitorResult,
-    Question,
-    QuestionSet,
-    QuestionSetItem,
+    Business, EffectReport, FeedingAsset, FeedingImage, FeedingPlan,
+    MonitorRun, MonitorResult, Question, QuestionSet, QuestionSetItem,
+    Platform, Plan,
 )
+
 from app.services.monitor_service import (
     PROVIDERS,
     create_monitor_runs,
@@ -90,7 +84,14 @@ def ensure_business_columns():
         "selling_points": "TEXT",
         "evidence": "TEXT",
         "website": "VARCHAR",
+        "plan_key": "VARCHAR DEFAULT 'trial'",
+        "subscription_status": "VARCHAR DEFAULT 'trial'",
+        "subscription_expires_at": "DATETIME",
+        "contact_name": "VARCHAR",
+        "contact_phone": "VARCHAR",
+        "contact_email": "VARCHAR",
     }
+
     with engine.begin() as connection:
         for name, column_type in additions.items():
             if name not in columns:
@@ -128,6 +129,13 @@ class BusinessInput(BaseModel):
     selling_points: str = ""
     evidence: str = ""
     website: str = ""
+    plan_key: str = "trial"
+    subscription_status: str = "trial"
+    subscription_expires_at: str = ""
+    contact_name: str = ""
+    contact_phone: str = ""
+    contact_email: str = ""
+
 
 
 class QuestionSetGenerate(BaseModel):
@@ -185,6 +193,14 @@ class EffectReportInput(BaseModel):
     feeding_plan_id: int = Field(gt=0)
     title: str = Field(min_length=1, max_length=200)
 
+def parse_datetime(value: str):
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
 
 def business_data(business):
     return {
@@ -197,6 +213,16 @@ def business_data(business):
         "selling_points": business.selling_points,
         "evidence": business.evidence,
         "website": business.website,
+        "plan_key": business.plan_key,
+        "subscription_status": business.subscription_status,
+        "subscription_expires_at": (
+            business.subscription_expires_at.isoformat()
+            if business.subscription_expires_at else None
+        ),
+        "contact_name": business.contact_name,
+        "contact_phone": business.contact_phone,
+        "contact_email": business.contact_email,
+
     }
 
 
@@ -376,6 +402,12 @@ def create_business(request: BusinessInput):
             selling_points=request.selling_points.strip() or None,
             evidence=request.evidence.strip() or None,
             website=request.website.strip() or None,
+            plan_key=request.plan_key or "trial",
+            subscription_status=request.subscription_status or "trial",
+            subscription_expires_at=parse_datetime(request.subscription_expires_at),
+            contact_name=request.contact_name.strip() or None,
+            contact_phone=request.contact_phone.strip() or None,
+            contact_email=request.contact_email.strip() or None,
         )
         db.add(business)
         db.commit()
@@ -406,6 +438,13 @@ def update_business(business_id: int, request: BusinessInput):
         business.selling_points = request.selling_points.strip() or None
         business.evidence = request.evidence.strip() or None
         business.website = request.website.strip() or None
+        business.plan_key = request.plan_key or "trial"
+        business.subscription_status = request.subscription_status or "trial"
+        business.subscription_expires_at = parse_datetime(request.subscription_expires_at)
+        business.contact_name = request.contact_name.strip() or None
+        business.contact_phone = request.contact_phone.strip() or None
+        business.contact_email = request.contact_email.strip() or None
+
         db.commit()
         db.refresh(business)
         return business_data(business)
@@ -420,6 +459,65 @@ def update_business(business_id: int, request: BusinessInput):
 def providers():
     return list_providers()
 
+@app.get("/api/platforms")
+def list_platforms():
+    db = SessionLocal()
+    try:
+        platforms = db.query(Platform).order_by(Platform.sort_order.asc()).all()
+        return [
+            {
+                "key": p.key, "label": p.label,
+                "authority": p.authority, "difficulty": p.difficulty,
+                "score": p.score, "publish_url": p.publish_url,
+            }
+            for p in platforms
+        ]
+    finally:
+        db.close()
+
+
+@app.get("/api/plans")
+def list_plans():
+    db = SessionLocal()
+    try:
+        plans = db.query(Plan).order_by(Plan.sort_order.asc()).all()
+        return [
+            {
+                "key": p.key, "label": p.label,
+                "annual_price": p.annual_price,
+                "billing_cycle": p.billing_cycle,
+                "platform_keys": json.loads(p.platform_keys or "[]"),
+                "description": p.description,
+            }
+            for p in plans
+        ]
+    finally:
+        db.close()
+
+
+@app.get("/api/businesses/{business_id}/platforms")
+def business_platforms(business_id: int):
+    db = SessionLocal()
+    try:
+        business = db.get(Business, business_id)
+        if business is None:
+            raise HTTPException(status_code=404, detail="企业不存在")
+        plan = db.query(Plan).filter(Plan.key == business.plan_key).first()
+        keys = json.loads(plan.platform_keys or "[]") if plan else []
+        platforms = db.query(Platform).filter(Platform.key.in_(keys)).all() if keys else []
+        order = {k: i for i, k in enumerate(keys)}
+        platforms = sorted(platforms, key=lambda p: order.get(p.key, 999))
+        return {
+            "business_id": business.id,
+            "plan_key": business.plan_key,
+            "plan_label": plan.label if plan else "未知套餐",
+            "platforms": [
+                {"key": p.key, "label": p.label, "score": p.score, "publish_url": p.publish_url}
+                for p in platforms
+            ],
+        }
+    finally:
+        db.close()
 
 @app.get("/api/questions")
 def list_questions(region: str | None = None):
@@ -636,6 +734,15 @@ def create_feeding_plan(request: FeedingPlanInput):
         if business is None:
             raise HTTPException(status_code=404, detail="企业不存在")
         channels = list(dict.fromkeys(request.channels))
+        plan_obj = db.query(Plan).filter(Plan.key == business.plan_key).first()
+        allowed_keys = json.loads(plan_obj.platform_keys or "[]") if plan_obj else []
+        invalid = [c for c in channels if c not in allowed_keys]
+        if invalid:
+            raise HTTPException(
+                status_code=400,
+                detail=f"当前套餐（{plan_obj.label if plan_obj else '未知'}）不包含以下平台：{'、'.join(invalid)}",
+            )
+
         try:
             assets = build_assets(business, channels, brief, request.provider)
         except ValueError as exc:

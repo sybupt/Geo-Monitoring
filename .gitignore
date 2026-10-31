@@ -1,29 +1,31 @@
 # Python
 __pycache__/
 *.py[cod]
-*.pyd
-
-# Local environments and editor files
-.venv/
 venv/
-env/
-.idea/
-.vscode/
+.venv/
+*.egg-info/
 
-# Secrets
+# 密钥（绝不提交）
 .env
-.env.*
-!.env.example
-backend/.env
-frontend/.env
-frontend/.streamlit/secrets.toml
 
-# Local databases and generated content
+# 数据库（运行时数据，不提交）
+geo.db
 *.db
-*.sqlite
-*.sqlite3
-backend/data/
 
-# Logs and temporary files
+# 日志
 *.log
-*.tmp
+
+# 上传的图片（运行时数据）
+backend/data/
+data/feeding_images/
+
+# 前端
+frontend/node_modules/
+frontend/dist/
+
+# IDE
+.vscode/
+.idea/
+
+# 结果文件
+results/*.json
