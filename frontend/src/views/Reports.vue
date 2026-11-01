@@ -332,6 +332,34 @@ async function loadReport() {
     error.value = e.response?.data?.detail || e.message
   }
 }
+async function loadOverview() {
+  if (!overviewQuestionSetId.value) { overview.value = null; return }
+  try {
+    const { data } = await api.get('/effect-overview', {
+      params: { business_id: businessId.value, question_set_id: overviewQuestionSetId.value }
+    })
+    overview.value = data
+  } catch (e) {
+    overview.value = null
+  }
+}
+function modelMention(q, provider, key) {
+  const m = q.models && q.models[provider]
+  if (!m) return '—'
+  return m[key] ? '✓ 提及' : '✗ 未提及'
+}
+function isNewMention(q, provider) {
+  const m = q.models && q.models[provider]
+  return m && !m.baseline_mentioned && m.after_mentioned
+}
+function changeClass(v) {
+  if (v == null) return ''
+  return v > 0 ? 'change-up' : (v < 0 ? 'change-down' : '')
+}
+function formatChangeShort(v) {
+  if (v == null) return '—'
+  return `${v > 0 ? '+' : ''}${v}%`
+}
 
 async function runAfterDetection(b) {
   runningAfter.value = true
