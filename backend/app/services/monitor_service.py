@@ -1,10 +1,12 @@
 import time
+import re
+from urllib.parse import urlparse
 from openai import OpenAI
 from app.config import DEEPSEEK_KEY, DEEPSEEK_BASE, DEEPSEEK_MODEL, KIMI_KEY, KIMI_BASE, KIMI_MODEL
 from app.database import SessionLocal
-from app.models import Business, MonitorRun, MonitorResult, Question, QuestionSet
+from app.models import Business, MonitorRun, MonitorResult, Question, QuestionSet, Citation
 
-SLEEP_BETWEEN = 20   # Kimi 免费档 3 RPM，20 秒一次最稳
+SLEEP_BETWEEN = 20
 
 PROVIDERS = {
     "kimi_search": {
@@ -23,6 +25,36 @@ PROVIDERS = {
     },
 }
 
+URL_RE = re.compile(r'https?://[^\s\)\]\"\'，。；]+')
+MD_LINK_RE = re.compile(r'\[([^\]]*)\]\((https?://[^\)]+)\)')
+
+
+def extract_citations(text):
+    """从回答文本抽取引用来源（URL + 域名 + 位置），返回 list[dict]"""
+    if not text:
+        return []
+    citations = []
+    seen = set()
+    for m in MD_LINK_RE.finditer(text):
+        url = m.group(2).rstrip('.,;')
+        if url not in seen:
+            seen.add(url)
+            citations.append({
+                "source_url": url,
+                "source_domain": urlparse(url).netloc,
+                "position": m.start(),
+            })
+    for m in URL_RE.finditer(text):
+        url = m.group(0).rstrip('.,;')
+        if url not in seen:
+            seen.add(url)
+            citations.append({
+                "source_url": url,
+                "source_domain": urlparse(url).netloc,
+                "position": m.start(),
+            })
+    return citations
+
 
 def list_providers():
     return [
@@ -32,7 +64,6 @@ def list_providers():
 
 
 def questions_for_business(db, business):
-    """企业监测问题（优先 active 问题集，否则旧 questions 表）"""
     if business is None:
         return []
     active = (
@@ -71,7 +102,6 @@ def create_monitor_runs(business_id, stage, provider_ids, question_set_id=None):
 
 
 def ask_text(provider_id, prompt):
-    """通用：用某个模型问一段话，返回文本（供监测/投喂/问题生成共用）"""
     provider = PROVIDERS[provider_id]
     if not provider["key"]:
         raise RuntimeError(f"{provider['label']} 未配置 API 密钥")
@@ -144,7 +174,6 @@ def _ask_with_search(client, provider, prompt):
 
 
 def run_monitor(run_id):
-    """对某个监测批次（MonitorRun）执行监测（供 FastAPI 后台任务调用）"""
     db = SessionLocal()
     try:
         run = db.get(MonitorRun, run_id)
@@ -176,7 +205,7 @@ def run_monitor(run_id):
         for q in questions:
             answer = ask_text(run.engine, q["text"])
             mentioned = bool(business.alias and business.alias in answer)
-            db.add(MonitorResult(
+            result = MonitorResult(
                 run_id=run.id,
                 question_id=q["question_id"],
                 question_text=q["text"],
@@ -185,7 +214,18 @@ def run_monitor(run_id):
                 snippet=business.alias if mentioned else "",
                 score=1.0 if mentioned else 0.0,
                 raw_answer=answer,
-            ))
+            )
+            db.add(result)
+            db.flush()
+
+            for cite in extract_citations(answer):
+                db.add(Citation(
+                    result_id=result.id,
+                    source_url=cite["source_url"],
+                    source_domain=cite["source_domain"],
+                    position=cite["position"],
+                ))
+
             db.commit()
             time.sleep(SLEEP_BETWEEN)
 

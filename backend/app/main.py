@@ -16,7 +16,7 @@ from starlette.responses import FileResponse, Response
 from app.database import engine, Base, SessionLocal
 import app.models
 from app.models import (
-    Business, EffectReport, FeedingAsset, FeedingImage, FeedingPlan,
+    Business, Citation, EffectReport, FeedingAsset, FeedingImage, FeedingPlan,
     MonitorRun, MonitorResult, Question, QuestionSet, QuestionSetItem,
     Platform, Plan,
 )
@@ -321,7 +321,32 @@ def results_by_question(db, run):
         result.question_text or old_questions.get(result.question_id, ""): result
         for result in results
     }
+def citations_for_results(db, result_ids):
+    """返回 {result_id: [{"url":..., "domain":..., "position":...}]}"""
+    if not result_ids:
+        return {}
+    rows = db.query(Citation).filter(Citation.result_id.in_(result_ids)).all()
+    mapping = {}
+    for c in rows:
+        mapping.setdefault(c.result_id, []).append({
+            "url": c.source_url,
+            "domain": c.source_domain,
+            "position": c.position,
+        })
+    return mapping
 
+def citations_for_results(db, result_ids):
+    """返回 {result_id: [{"url":..., "domain":...}]}"""
+    if not result_ids:
+        return {}
+    rows = db.query(Citation).filter(Citation.result_id.in_(result_ids)).all()
+    mapping = {}
+    for c in rows:
+        mapping.setdefault(c.result_id, []).append({
+            "url": c.source_url,
+            "domain": c.source_domain,
+        })
+    return mapping
 
 def report_html(snapshot):
     before_rate = snapshot["baseline"]["mention_rate"]
@@ -476,6 +501,25 @@ def list_platforms():
     finally:
         db.close()
 
+@app.get("/api/citations")
+def list_citations(business_id: int):
+    db = SessionLocal()
+    try:
+        rows = (
+            db.query(Citation.source_domain, func.count(Citation.id))
+            .join(MonitorResult, Citation.result_id == MonitorResult.id)
+            .join(MonitorRun, MonitorResult.run_id == MonitorRun.id)
+            .filter(MonitorRun.business_id == business_id)
+            .group_by(Citation.source_domain)
+            .order_by(func.count(Citation.id).desc())
+            .all()
+        )
+        return [
+            {"domain": domain, "count": count}
+            for domain, count in rows
+        ]
+    finally:
+        db.close()
 
 @app.get("/api/plans")
 def list_plans():
@@ -1097,6 +1141,8 @@ def build_effect_report(db, request: EffectReportInput):
             status_code=400,
             detail="投喂后检测时间必须晚于关联计划最近一次发布",
         )
+    baseline_citations = citations_for_results(db, [r.id for r in before_results.values()])
+    after_citations = citations_for_results(db, [r.id for r in after_results.values()])
     questions = []
     for question_text in sorted(before_results):
         before = before_results[question_text]
@@ -1107,7 +1153,10 @@ def build_effect_report(db, request: EffectReportInput):
             "after_mentioned": bool(after_result.mentioned),
             "baseline_answer": before.raw_answer or "",
             "after_answer": after_result.raw_answer or "",
+            "baseline_citations": baseline_citations.get(before.id, []),
+            "after_citations": after_citations.get(after_result.id, []),
         })
+
     question_set = (
         f"问题集 v{baseline.question_set.version}"
         if baseline.question_set_id and baseline.question_set
@@ -1285,6 +1334,23 @@ def monitor_run_detail(run_id: int):
             .order_by(MonitorResult.id.asc())
             .all()
         )
+        citations_map = citations_for_results(db, [r.id for r, _ in results])
+        return {
+            **run_metrics(db, run),
+            "results": [
+                {
+                    "result_id": result.id,
+                    "question": result.question_text or (question.text if question else ""),
+                    "category": question.category if question else None,
+                    "mentioned": bool(result.mentioned),
+                    "snippet": result.snippet,
+                    "raw_answer": result.raw_answer,
+                    "citations": citations_map.get(result.id, []),
+                }
+                for result, question in results
+            ],
+        }
+
         return {
             **run_metrics(db, run),
             "results": [
@@ -1457,18 +1523,22 @@ def latest_mentions(business_id: int = 1):
             .filter(MonitorResult.run_id == latest.id)
             .all()
         )
+        citations_map = citations_for_results(db, [r.id for r, _ in rows])
         return {
             "run_id": latest.id,
             "time": latest.created_at.isoformat(),
             "results": [
                 {
+                    "result_id": result.id,
                     "question": result.question_text or question_text,
                     "mentioned": bool(result.mentioned),
                     "snippet": result.snippet,
                     "raw_answer": result.raw_answer,
+                    "citations": citations_map.get(result.id, []),
                 }
                 for result, question_text in rows
             ],
         }
+
     finally:
         db.close()

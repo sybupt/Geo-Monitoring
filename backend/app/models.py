@@ -15,9 +15,8 @@ class Business(Base):
     selling_points = Column(Text)
     evidence = Column(Text)
     website = Column(String)
-    # ===== 会员字段 =====
     plan_key = Column(String, default="trial")
-    subscription_status = Column(String, default="trial")  # trial/active/expired/suspended
+    subscription_status = Column(String, default="trial")
     subscription_expires_at = Column(DateTime)
     contact_name = Column(String)
     contact_phone = Column(String)
@@ -38,7 +37,7 @@ class QuestionSet(Base):
     id = Column(Integer, primary_key=True)
     business_id = Column(Integer, ForeignKey("businesses.id"))
     version = Column(Integer, default=1)
-    status = Column(String, default="draft")   # draft / active / archived
+    status = Column(String, default="draft")
     source = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
     items = relationship("QuestionSetItem", backref="question_set", cascade="all, delete-orphan")
@@ -56,9 +55,9 @@ class MonitorRun(Base):
     __tablename__ = "monitor_runs"
     id = Column(Integer, primary_key=True)
     business_id = Column(Integer, ForeignKey("businesses.id"))
-    engine = Column(String)          # provider_id：kimi_search / deepseek
-    status = Column(String, default="pending")  # pending / running / done / failed
-    stage = Column(String, default="legacy")    # baseline / after / legacy
+    engine = Column(String)
+    status = Column(String, default="pending")
+    stage = Column(String, default="legacy")
     error = Column(Text)
     question_set_id = Column(Integer, ForeignKey("question_sets.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -80,13 +79,23 @@ class MonitorResult(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class Citation(Base):
+    __tablename__ = "citations"
+    id = Column(Integer, primary_key=True)
+    result_id = Column(Integer, ForeignKey("monitor_results.id"))
+    source_url = Column(String)
+    source_domain = Column(String)
+    position = Column(Integer)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class FeedingPlan(Base):
     __tablename__ = "feeding_plans"
     id = Column(Integer, primary_key=True)
     business_id = Column(Integer, ForeignKey("businesses.id"))
     name = Column(String)
     brief = Column(Text, default="{}")
-    status = Column(String, default="draft")   # draft / in_progress / published
+    status = Column(String, default="draft")
     created_at = Column(DateTime, default=datetime.utcnow)
     assets = relationship("FeedingAsset", backref="plan")
 
@@ -98,7 +107,7 @@ class FeedingAsset(Base):
     channel = Column(String)
     title = Column(String)
     content = Column(Text)
-    status = Column(String, default="draft")   # draft / reviewed / published
+    status = Column(String, default="draft")
     published_url = Column(String)
     published_at = Column(DateTime)
     images = relationship("FeedingImage", backref="asset")
@@ -125,25 +134,26 @@ class EffectReport(Base):
     snapshot = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
 class Platform(Base):
     __tablename__ = "platforms"
     id = Column(Integer, primary_key=True)
-    key = Column(String, unique=True)      # wechat_personal / wechat / zhihu ...
-    label = Column(String)                 # 中文名
-    authority = Column(Integer)            # 权威度 1-10
-    difficulty = Column(Integer)           # 发布难度 1-10
-    score = Column(Float)                  # 综合分 = 0.6*authority + 0.4*difficulty
-    publish_url = Column(String)           # 发布入口 URL
+    key = Column(String, unique=True)
+    label = Column(String)
+    authority = Column(Integer)
+    difficulty = Column(Integer)
+    score = Column(Float)
+    publish_url = Column(String)
     sort_order = Column(Integer, default=0)
 
 
 class Plan(Base):
     __tablename__ = "plans"
     id = Column(Integer, primary_key=True)
-    key = Column(String, unique=True)      # trial / basic / standard / premium
+    key = Column(String, unique=True)
     label = Column(String)
-    annual_price = Column(Integer)         # 年费（元）
-    billing_cycle = Column(String, default="annual")   # annual / monthly（预留）
-    platform_keys = Column(Text)           # JSON 数组
+    annual_price = Column(Integer)
+    billing_cycle = Column(String, default="annual")
+    platform_keys = Column(Text)
     description = Column(String)
     sort_order = Column(Integer, default=0)

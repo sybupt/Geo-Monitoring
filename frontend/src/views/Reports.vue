@@ -128,10 +128,24 @@
               <div>
                 <b>投喂前回答</b>
                 <p>{{ q.baseline_answer || '（无）' }}</p>
+                <div class="citations">
+                  <template v-if="q.baseline_citations && q.baseline_citations.length">
+                    <a v-for="(c, ci) in q.baseline_citations" :key="ci"
+                       :href="c.url" target="_blank" rel="noopener" class="citation-link">{{ c.domain || c.url }}</a>
+                  </template>
+                  <span v-else class="citation-none">未提供引用来源</span>
+                </div>
               </div>
               <div>
                 <b>投喂后回答</b>
                 <p>{{ q.after_answer || '（无）' }}</p>
+                <div class="citations">
+                  <template v-if="q.after_citations && q.after_citations.length">
+                    <a v-for="(c, ci) in q.after_citations" :key="ci"
+                       :href="c.url" target="_blank" rel="noopener" class="citation-link">{{ c.domain || c.url }}</a>
+                  </template>
+                  <span v-else class="citation-none">未提供引用来源</span>
+                </div>
               </div>
             </div>
           </details>
@@ -349,4 +363,9 @@ onMounted(async () => {
 .answer-pair summary { cursor: pointer; font-size: 14px; }
 .answer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; }
 .answer-grid p { white-space: pre-wrap; font-size: 13px; line-height: 1.6; color: #33403c; }
+.citations { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; }
+.citation-link { color: #116b55; text-decoration: none; }
+.citation-link:hover { text-decoration: underline; }
+.citation-none { color: #9aa8a1; }
+
 </style>
