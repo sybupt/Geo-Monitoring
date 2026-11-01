@@ -129,6 +129,39 @@
 
       <p v-if="!p.assets.length" class="muted">该计划在当前套餐下没有可展示的平台素材。</p>
     </section>
+   
+    <!-- 投喂记录与效果复测 -->
+    <section class="card">
+      <h2>投喂记录与效果复测</h2>
+      <div class="feed-summary">
+        <b>已投喂平台：</b>
+        <template v-if="publishedAssets.length">
+          <span v-for="a in publishedAssets" :key="a.id" class="channel-tag">{{ a.channel_name }}</span>
+          <span class="muted">（最近投喂：{{ latestPublishTime || '—' }}）</span>
+        </template>
+        <span v-else class="muted">暂无</span>
+      </div>
+
+      <table class="table" v-if="baselineRuns.length">
+        <thead>
+          <tr><th>监测模型</th><th>问题集</th><th>投喂前提及率</th><th>投喂后提及率</th><th>操作</th></tr>
+        </thead>
+        <tbody>
+          <tr v-for="b in baselineRuns" :key="b.run_id">
+            <td>{{ b.provider_name }}</td>
+            <td>{{ questionSetLabel(b.question_set_id) }}</td>
+            <td>{{ b.mention_rate }}%</td>
+            <td>{{ afterState(b).state === 'done' ? afterState(b).rate + '%' : '—' }}</td>
+            <td>
+              <button v-if="afterState(b).state === 'none'" class="btn primary" :disabled="runningAfter" @click="runAfter(b)">投喂后复测</button>
+              <span v-else-if="afterState(b).state === 'running'" class="tag active">复测中…</span>
+              <span v-else class="tag published">已复测</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p v-else class="muted">还没有投喂前基线监测。请先在「问题工厂」启动基线监测。</p>
+    </section>
 
     <p v-if="!plans.length && loaded" class="muted">还没有投喂计划。先在上方创建计划。</p>
   </div>
@@ -184,6 +217,73 @@ const copiedId = ref(null)
 const businessPlatforms = ref([])
 const planInfo = ref(null)
 const previewingId = ref(null)
+const monitorRuns = ref([])
+const questionSets = ref([])
+const runningAfter = ref(false)
+
+const publishedAssets = computed(() => {
+  const result = []
+  for (const p of plans.value) {
+    for (const a of p.assets) {
+      if (a.status === 'published') result.push({ ...a, planName: p.name })
+    }
+  }
+  return result
+})
+const latestPublishTime = computed(() => {
+  const times = publishedAssets.value.map(a => a.published_at).filter(Boolean)
+  return times.length ? times.sort().pop().replace('T', ' ').slice(0, 16) : ''
+})
+const baselineRuns = computed(() => {
+  const runs = monitorRuns.value.filter(r => r.stage === 'baseline' && r.status === 'done')
+  const seen = new Map()
+  for (const r of runs) {
+    const key = `${r.provider}-${r.question_set_id}`
+    const old = seen.get(key)
+    if (!old || r.run_id > old.run_id) seen.set(key, r)
+  }
+  return [...seen.values()].sort((a, b) => b.run_id - a.run_id)
+})
+
+const afterRunsAll = computed(() => monitorRuns.value.filter(r => r.stage === 'after'))
+
+function questionSetLabel(id) {
+  const qs = questionSets.value.find(q => q.id === id)
+  return qs ? `v${qs.version}` : '历史问题'
+}
+function afterState(baseline) {
+  const a = afterRunsAll.value.find(x => x.provider === baseline.provider && x.question_set_id === baseline.question_set_id)
+  if (!a) return { state: 'none' }
+  if (a.status === 'done') return { state: 'done', rate: a.mention_rate }
+  return { state: 'running' }
+}
+
+async function loadMonitorData() {
+  try {
+    const [runs, qsets] = await Promise.all([
+      api.get('/monitor-runs', { params: { business_id: businessId.value, limit: 100 } }),
+      api.get('/question-sets', { params: { business_id: businessId.value } }),
+    ])
+    monitorRuns.value = runs.data
+    questionSets.value = qsets.data
+  } catch (e) { error.value = e.response?.data?.detail || e.message }
+}
+
+async function runAfter(baseline) {
+  runningAfter.value = true
+  error.value = ''
+  try {
+    await api.post('/monitor-runs', {
+      business_id: businessId.value,
+      stage: 'after',
+      providers: [baseline.provider],
+      question_set_id: baseline.question_set_id,
+    })
+    await loadMonitorData()
+  } catch (e) { error.value = e.response?.data?.detail || e.message }
+  finally { runningAfter.value = false }
+}
+
 
 const plan = reactive({
   name: '', business_keywords: '', activity_name: '', promotional_points: '',
@@ -245,6 +345,7 @@ async function loadBusinessPlatforms() {
 async function onBusinessChange() {
   await loadBusinessPlatforms()
   await loadPlans()
+  await loadMonitorData()
 }
 
 async function createPlan() {
@@ -316,6 +417,7 @@ onMounted(async () => {
     if (configuredProviders.value.length) plan.provider = configuredProviders.value[0].id
     await loadBusinessPlatforms()
     await loadPlans()
+    await loadMonitorData()
   } catch (e) { error.value = e.message }
 })
 </script>
@@ -366,5 +468,7 @@ textarea { width: 100%; }
 .preview-content :deep(strong) { font-weight: 700; }
 .preview-content { font-size: 14.5px; color: #26332e; line-height: 1.7; }
 .hint { color: #94a3b8; font-size: 13px; padding: 9px 0; display: inline-block; }
+.feed-summary { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; font-size: 14px; }
+.channel-tag { background: #e9f5ef; color: #116b55; padding: 3px 12px; border-radius: 999px; font-size: 13px; }
 
 </style>

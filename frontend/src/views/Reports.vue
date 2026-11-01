@@ -2,7 +2,7 @@
   <div class="page">
     <div class="page-header">
       <h1>检测报告</h1>
-      <p class="muted">选择同一模型、同一问题集的投喂前基线和投喂后检测，生成并保存效果对比报告。</p>
+      <p class="muted">查看投喂进度、实时复测效果，并生成前后对比报告。</p>
     </div>
 
     <div class="toolbar">
@@ -11,6 +11,40 @@
         <option v-for="b in businesses" :key="b.id" :value="b.id">{{ b.name }}</option>
       </select>
     </div>
+
+    <!-- 投喂状态与实时检测 -->
+    <section class="card">
+      <h2>投喂状态与实时检测</h2>
+      <div class="feed-status">
+        <template v-if="publishedAssets.length">
+          <span v-for="a in publishedAssets" :key="a.id" class="feed-item">
+            <span class="channel-tag">{{ a.channel_name }}</span>
+            <span class="muted">{{ timeAgo(a.published_at) }}</span>
+          </span>
+        </template>
+        <span v-else class="muted">尚未投喂</span>
+      </div>
+
+      <table class="table" v-if="dedupedBaselineRuns.length">
+        <thead>
+          <tr><th>问题集</th><th>模型</th><th>投喂前引用</th><th>投喂后引用</th><th>操作</th></tr>
+        </thead>
+        <tbody>
+          <tr v-for="b in dedupedBaselineRuns" :key="b.run_id">
+            <td>{{ questionSetVersion(b.question_set_id) }}</td>
+            <td>{{ b.provider_name }}</td>
+            <td>{{ b.mention_rate }}%</td>
+            <td>{{ afterState(b).state === 'done' ? afterState(b).rate + '%' : '—' }}</td>
+            <td>
+              <button v-if="afterState(b).state === 'none'" class="btn primary" :disabled="runningAfter" @click="runAfterDetection(b)">投喂后检测</button>
+              <span v-else-if="afterState(b).state === 'running'" class="tag active">复测中…</span>
+              <span v-else class="tag published">已复测</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p v-else class="muted">还没有投喂前基线监测。请先在「问题工厂」启动基线监测。</p>
+    </section>
 
     <!-- 创建报告 -->
     <section class="card" v-if="comparablePairs.length && publishedPlans.length">
@@ -118,9 +152,11 @@ const businessId = ref(1)
 const runs = ref([])
 const feedingPlans = ref([])
 const reports = ref([])
+const questionSets = ref([])
 const error = ref('')
 const creating = ref(false)
 const loaded = ref(false)
+const runningAfter = ref(false)
 
 const reportTitle = ref('')
 const pairIndex = ref(0)
@@ -131,6 +167,28 @@ const selectedReport = ref(null)
 
 const baselineRuns = computed(() => runs.value.filter(r => r.status === 'done' && r.stage === 'baseline'))
 const afterRuns = computed(() => runs.value.filter(r => r.status === 'done' && r.stage === 'after'))
+const afterRunsAll = computed(() => runs.value.filter(r => r.stage === 'after'))
+
+const publishedAssets = computed(() => {
+  const result = []
+  for (const p of feedingPlans.value) {
+    for (const a of p.assets) {
+      if (a.status === 'published') result.push(a)
+    }
+  }
+  return result
+})
+
+const dedupedBaselineRuns = computed(() => {
+  const seen = new Map()
+  for (const r of baselineRuns.value) {
+    const key = `${r.provider}-${r.question_set_id}`
+    const old = seen.get(key)
+    if (!old || r.run_id > old.run_id) seen.set(key, r)
+  }
+  return [...seen.values()].sort((a, b) => b.run_id - a.run_id)
+})
+
 const comparablePairs = computed(() => {
   const pairs = []
   for (const b of baselineRuns.value)
@@ -149,6 +207,24 @@ function formatChange(v) {
   if (v == null) return '—'
   return `${v >= 0 ? '+' : ''}${v.toFixed(1)} 个百分点`
 }
+function questionSetVersion(id) {
+  const qs = questionSets.value.find(q => q.id === id)
+  return qs ? `v${qs.version}` : '历史问题'
+}
+function timeAgo(dateStr) {
+  if (!dateStr) return '—'
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const days = Math.floor(diff / 86400000)
+  if (days > 0) return `${days}天前`
+  const hours = Math.floor(diff / 3600000)
+  return hours > 0 ? `${hours}小时前` : '刚刚'
+}
+function afterState(b) {
+  const a = afterRunsAll.value.find(x => x.provider === b.provider && x.question_set_id === b.question_set_id)
+  if (!a) return { state: 'none' }
+  if (a.status === 'done') return { state: 'done', rate: a.mention_rate }
+  return { state: 'running' }
+}
 function outcome(q) {
   if (!q.baseline_answer && !q.after_answer) return '—'
   if (q.after_mentioned && !q.baseline_mentioned) return '新增提及'
@@ -163,14 +239,16 @@ function outcomeClass(q) {
 
 async function loadAll() {
   try {
-    const [runsData, plansData, reportsData] = await Promise.all([
+    const [runsData, plansData, reportsData, qsetsData] = await Promise.all([
       api.get('/monitor-runs', { params: { business_id: businessId.value, limit: 100 } }),
       api.get('/feeding-plans', { params: { business_id: businessId.value } }),
       api.get('/reports', { params: { business_id: businessId.value } }),
+      api.get('/question-sets', { params: { business_id: businessId.value } }),
     ])
     runs.value = runsData.data
     feedingPlans.value = plansData.data
     reports.value = reportsData.data
+    questionSets.value = qsetsData.data
     const b = businesses.value.find(x => x.id === businessId.value)
     reportTitle.value = b ? `${b.name} GEO 效果检测报告` : 'GEO 效果检测报告'
     if (publishedPlans.value.length) feedingPlanId.value = publishedPlans.value[0].id
@@ -192,6 +270,21 @@ async function loadReport() {
   } catch (e) {
     error.value = e.response?.data?.detail || e.message
   }
+}
+
+async function runAfterDetection(b) {
+  runningAfter.value = true
+  error.value = ''
+  try {
+    await api.post('/monitor-runs', {
+      business_id: businessId.value,
+      stage: 'after',
+      providers: [b.provider],
+      question_set_id: b.question_set_id,
+    })
+    await loadAll()
+  } catch (e) { error.value = e.response?.data?.detail || e.message }
+  finally { runningAfter.value = false }
 }
 
 async function createReport() {
@@ -238,6 +331,9 @@ onMounted(async () => {
 .btn.primary { background: #116b55; color: #fff; border-color: #116b55; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 .error { color: #b91c1c; font-size: 13px; margin-top: 10px; }
+.feed-status { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; font-size: 14px; }
+.feed-item { display: flex; align-items: center; gap: 6px; }
+.channel-tag { background: #e9f5ef; color: #116b55; padding: 3px 12px; border-radius: 999px; font-size: 13px; }
 .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 18px 0; }
 .metric-card { background: #f8faf8; border: 1px solid #e4ebe6; border-radius: 12px; padding: 16px 18px; }
 .metric-label { color: #70817b; font-size: 13px; margin-bottom: 6px; }
@@ -248,6 +344,7 @@ onMounted(async () => {
 .tag { display: inline-block; font-size: 12px; padding: 2px 10px; border-radius: 999px; }
 .tag.active { background: #e9f5ef; color: #116b55; }
 .tag.draft { background: #fff7e6; color: #b45309; }
+.tag.published { background: #eef2ff; color: #4f46e5; }
 .answer-pair details { margin: 10px 0; border: 1px solid #e4ebe6; border-radius: 10px; padding: 10px 14px; }
 .answer-pair summary { cursor: pointer; font-size: 14px; }
 .answer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; }
