@@ -24,6 +24,7 @@ import { ref, onMounted } from 'vue'
 import { getProviders } from './api'
 
 const navItems = [
+  { path: '/situation', title: '态势展示' },
   { path: '/members', title: '会员管理' },
   { path: '/overview', title: '效果总览' },
   { path: '/citation-insight', title: '引用洞察' },
