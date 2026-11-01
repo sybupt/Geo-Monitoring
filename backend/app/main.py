@@ -1141,7 +1141,7 @@ def build_effect_report(db, request: EffectReportInput):
             status_code=400,
             detail="投喂后检测时间必须晚于关联计划最近一次发布",
         )
-    baseline_citations = citations_for_results(db, [r.id for r in before_results.values()])
+        baseline_citations = citations_for_results(db, [r.id for r in before_results.values()])
     after_citations = citations_for_results(db, [r.id for r in after_results.values()])
     questions = []
     for question_text in sorted(before_results):
@@ -1540,5 +1540,65 @@ def latest_mentions(business_id: int = 1):
             ],
         }
 
+    finally:
+        db.close()
+
+@app.get("/api/effect-overview")
+def effect_overview(business_id: int, question_set_id: int):
+    db = SessionLocal()
+    try:
+        if db.get(Business, business_id) is None:
+            raise HTTPException(status_code=404, detail="企业不存在")
+        runs = (
+            db.query(MonitorRun)
+            .filter(
+                MonitorRun.business_id == business_id,
+                MonitorRun.question_set_id == question_set_id,
+                MonitorRun.status == "done",
+            )
+            .all()
+        )
+        by_engine = {}
+        for run in runs:
+            by_engine.setdefault(run.engine, {})[run.stage] = run
+
+        providers = []
+        question_map = {}
+        for engine in sorted(by_engine):
+            stages = by_engine[engine]
+            baseline = stages.get("baseline")
+            after = stages.get("after")
+            if not baseline or not after:
+                continue
+            b_metrics = run_metrics(db, baseline)
+            a_metrics = run_metrics(db, after)
+            change = None
+            if b_metrics["mention_rate"] is not None and a_metrics["mention_rate"] is not None:
+                change = round(a_metrics["mention_rate"] - b_metrics["mention_rate"], 2)
+            providers.append({
+                "provider": engine,
+                "provider_name": PROVIDERS.get(engine, {}).get("label", engine),
+                "baseline": b_metrics,
+                "after": a_metrics,
+                "change": change,
+            })
+            b_results = results_by_question(db, baseline)
+            a_results = results_by_question(db, after)
+            for q_text in set(b_results) | set(a_results):
+                b_res = b_results.get(q_text)
+                a_res = a_results.get(q_text)
+                question_map.setdefault(q_text, {})[engine] = {
+                    "baseline_mentioned": bool(b_res.mentioned) if b_res else False,
+                    "after_mentioned": bool(a_res.mentioned) if a_res else False,
+                }
+
+        return {
+            "question_set_id": question_set_id,
+            "providers": providers,
+            "questions": [
+                {"question": q, "models": models}
+                for q, models in sorted(question_map.items())
+            ],
+        }
     finally:
         db.close()

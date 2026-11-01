@@ -46,6 +46,38 @@
       <p v-else class="muted">还没有投喂前基线监测。请先在「问题工厂」启动基线监测。</p>
     </section>
 
+        <!-- 效果总览 -->
+    <section class="card" v-if="overviewQuestionSets.length">
+      <h2>效果总览</h2>
+      <div class="form-row">
+        <label>问题集</label>
+        <select v-model="overviewQuestionSetId" class="input" @change="loadOverview">
+          <option v-for="qs in overviewQuestionSets" :key="qs.id" :value="qs.id">v{{ qs.version }}</option>
+        </select>
+      </div>
+
+      <template v-if="overview && overview.providers.length">
+        <div v-for="q in overview.questions" :key="q.question" class="q-table">
+          <table class="table">
+            <thead>
+              <tr><th colspan="5" class="q-title">{{ q.question }}</th></tr>
+              <tr><th>模型</th><th>投喂前</th><th>投喂后</th><th>提及率</th><th>涨幅</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="p in overview.providers" :key="p.provider">
+                <td>{{ p.provider_name }}</td>
+                <td>{{ modelMention(q, p.provider, 'baseline_mentioned') }}</td>
+                <td :class="{ 'new-mention': isNewMention(q, p.provider) }">{{ modelMention(q, p.provider, 'after_mentioned') }}</td>
+                <td>{{ displayRate(p.baseline.mention_rate) }} → {{ displayRate(p.after.mention_rate) }}</td>
+                <td :class="changeClass(p.change)">{{ formatChangeShort(p.change) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </template>
+      <p v-else class="muted">该问题集下还没有「基线 + 复测」都完成的模型。</p>
+    </section>
+
     <!-- 创建报告 -->
     <section class="card" v-if="comparablePairs.length && publishedPlans.length">
       <h2>生成效果报告</h2>
@@ -178,6 +210,8 @@ const feedingPlanId = ref(null)
 
 const selectedReportId = ref(null)
 const selectedReport = ref(null)
+const overviewQuestionSetId = ref(null)
+const overview = ref(null)
 
 const baselineRuns = computed(() => runs.value.filter(r => r.status === 'done' && r.stage === 'baseline'))
 const afterRuns = computed(() => runs.value.filter(r => r.status === 'done' && r.stage === 'after'))
@@ -214,6 +248,11 @@ const comparablePairs = computed(() => {
 const publishedPlans = computed(() =>
   feedingPlans.value.filter(p => p.assets.some(a => a.status === 'published'))
 )
+const overviewQuestionSets = computed(() => {
+  const baselineIds = new Set(runs.value.filter(r => r.status === 'done' && r.stage === 'baseline').map(r => r.question_set_id))
+  const afterIds = new Set(runs.value.filter(r => r.status === 'done' && r.stage === 'after').map(r => r.question_set_id))
+  return questionSets.value.filter(qs => baselineIds.has(qs.id) && afterIds.has(qs.id))
+})
 
 function displayTime(v) { return v ? v.replace('T', ' ').slice(0, 16) : '—' }
 function displayRate(v) { return v != null ? `${v.toFixed(1)}%` : '—' }
@@ -253,6 +292,9 @@ function outcomeClass(q) {
 
 async function loadAll() {
   try {
+    overviewQuestionSetId.value = null
+    overview.value = null
+
     const [runsData, plansData, reportsData, qsetsData] = await Promise.all([
       api.get('/monitor-runs', { params: { business_id: businessId.value, limit: 100 } }),
       api.get('/feeding-plans', { params: { business_id: businessId.value } }),
@@ -270,6 +312,11 @@ async function loadAll() {
       selectedReportId.value = reports.value[0].id
       await loadReport()
     }
+    if (overviewQuestionSets.value.length && !overviewQuestionSetId.value) {
+      overviewQuestionSetId.value = overviewQuestionSets.value[0].id
+    }
+    if (overviewQuestionSetId.value) await loadOverview()
+
     loaded.value = true
   } catch (e) {
     error.value = e.response?.data?.detail || e.message
@@ -367,5 +414,10 @@ onMounted(async () => {
 .citation-link { color: #116b55; text-decoration: none; }
 .citation-link:hover { text-decoration: underline; }
 .citation-none { color: #9aa8a1; }
+.q-table { margin-top: 16px; }
+.q-title { text-align: left; background: #f0f5f1; font-weight: 700; }
+.new-mention { color: #116b55; font-weight: 700; }
+.change-up { color: #16a34a; font-weight: 700; }
+.change-down { color: #b91c1c; font-weight: 700; }
 
 </style>
