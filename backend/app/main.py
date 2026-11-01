@@ -548,7 +548,7 @@ def list_citations(business_id: int):
         ]
     finally:
         db.close()
-        
+
 @app.get("/api/citation-insight/source-aggregation")
 def citation_source_aggregation(business_id: int):
     db = SessionLocal()
@@ -595,8 +595,17 @@ def citation_source_aggregation(business_id: int):
             for key, cfg in sorted(PROVIDERS.items())
         ]
 
+        platform_rows = db.query(Platform).order_by(Platform.sort_order.asc()).all()
+        platform_labels = {p.key: p.label for p in platform_rows}
+
+        # 基础行：8 个投喂平台（引用 0 也显示）+ other（有数据才追加）
+        keys = [p.key for p in platform_rows]
+        if "other" in agg:
+            keys.append("other")
+
         rows = []
-        for pk, engines in agg.items():
+        for pk in keys:
+            engines = agg.get(pk, {})
             counts, b_total, a_total = {}, 0, 0
             for p in provider_list:
                 node = engines.get(p["key"], {"baseline": 0, "after": 0})
@@ -622,7 +631,7 @@ def citation_source_aggregation(business_id: int):
                 investment = "gap"
             rows.append({
                 "platform_key": pk,
-                "platform_label": platforms.get(pk) or ("其他信源" if pk == "other" else pk),
+                "platform_label": platform_labels.get(pk) or ("其他信源" if pk == "other" else pk),
                 "counts": counts,
                 "total": a_total,
                 "change": change,
@@ -630,11 +639,60 @@ def citation_source_aggregation(business_id: int):
                 "investment": investment,
             })
 
-        rows.sort(key=lambda r: (-r["total"], r["platform_key"]))
         return {"providers": provider_list, "rows": rows}
+
     finally:
         db.close()
 
+@app.get("/api/citation-insight/model-comparison")
+def citation_model_comparison(business_id: int):
+    db = SessionLocal()
+    try:
+        if db.get(Business, business_id) is None:
+            raise HTTPException(status_code=404, detail="企业不存在")
+
+        total_map = dict(
+            db.query(MonitorRun.engine, func.count(MonitorResult.id))
+            .join(MonitorResult, MonitorResult.run_id == MonitorRun.id)
+            .filter(MonitorRun.business_id == business_id, MonitorRun.status == "done")
+            .group_by(MonitorRun.engine)
+            .all()
+        )
+        mentioned_map = dict(
+            db.query(MonitorRun.engine, func.count(MonitorResult.id))
+            .join(MonitorResult, MonitorResult.run_id == MonitorRun.id)
+            .filter(
+                MonitorRun.business_id == business_id,
+                MonitorRun.status == "done",
+                MonitorResult.mentioned == 1,
+            )
+            .group_by(MonitorRun.engine)
+            .all()
+        )
+        cit_map = dict(
+            db.query(MonitorRun.engine, func.count(Citation.id))
+            .join(MonitorResult, Citation.result_id == MonitorResult.id)
+            .join(MonitorRun, MonitorResult.run_id == MonitorRun.id)
+            .filter(MonitorRun.business_id == business_id)
+            .group_by(MonitorRun.engine)
+            .all()
+        )
+
+        models = []
+        for key, cfg in sorted(PROVIDERS.items()):
+            total = total_map.get(key, 0)
+            mentioned = mentioned_map.get(key, 0) or 0
+            models.append({
+                "provider": key,
+                "label": cfg.get("label", key),
+                "total": total,
+                "mentioned": mentioned,
+                "mention_rate": round(mentioned / total * 100, 2) if total else 0,
+                "citations": cit_map.get(key, 0),
+            })
+        return {"models": models}
+    finally:
+        db.close()
 
 @app.get("/api/plans")
 def list_plans():

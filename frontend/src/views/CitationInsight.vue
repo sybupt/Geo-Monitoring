@@ -7,7 +7,7 @@
 
     <div class="toolbar">
       <label>当前企业：</label>
-      <select v-model="businessId" @change="loadAll">
+        <select v-model="businessId" @change="loadAll; loadModelComparison">
         <option v-for="b in businesses" :key="b.id" :value="b.id">{{ b.name }}</option>
       </select>
     </div>
@@ -55,10 +55,30 @@
       <p v-else class="muted">暂无引用数据。</p>
     </section>
 
-    <!-- 其余三个视图骨架 -->
+    <!-- 模型对比 -->
+    <section v-else-if="activeTab === 'model'" class="card">
+      <table v-if="modelComparison.length" class="table">
+        <thead>
+          <tr><th>模型</th><th>监测问题数</th><th>提及数</th><th>提及率</th><th>引用次数</th></tr>
+        </thead>
+        <tbody>
+          <tr v-for="m in modelComparison" :key="m.provider">
+            <td>{{ m.label }}</td>
+            <td>{{ m.total }}</td>
+            <td>{{ m.mentioned }}</td>
+            <td>{{ m.mention_rate }}%</td>
+            <td>{{ m.citations }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p v-else class="muted">暂无监测数据。</p>
+    </section>
+
+    <!-- 其余两个视图骨架 -->
     <section v-else class="card">
       <p class="muted">「{{ tabLabel }}」视图规划中，待引用数据接入后上线。</p>
     </section>
+
   </div>
 </template>
 
@@ -78,6 +98,8 @@ const businessId = ref(1)
 const activeTab = ref('source')
 const statusFilter = ref('')
 const overview = ref({ providers: [], rows: [] })
+const modelComparison = ref([])
+
 
 const filteredRows = computed(() => {
   if (!statusFilter.value) return overview.value.rows
@@ -100,11 +122,22 @@ async function loadAll() {
   }
 }
 
+async function loadModelComparison() {
+  try {
+    const { data } = await api.get('/citation-insight/model-comparison', { params: { business_id: businessId.value } })
+    modelComparison.value = data.models || []
+  } catch (e) {
+    modelComparison.value = []
+  }
+}
+
 onMounted(async () => {
   try {
     businesses.value = await getBusinesses()
     if (businesses.value.length) businessId.value = businesses.value[0].id
     await loadAll()
+    await loadModelComparison()
+
   } catch (e) {}
 })
 </script>
