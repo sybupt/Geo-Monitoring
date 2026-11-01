@@ -10,7 +10,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field
-from sqlalchemy import func, inspect
+from sqlalchemy import func, inspect, true
 from starlette.responses import FileResponse, Response
 
 from app.database import engine, Base, SessionLocal
@@ -691,6 +691,262 @@ def citation_model_comparison(business_id: int):
                 "citations": cit_map.get(key, 0),
             })
         return {"models": models}
+    finally:
+        db.close()
+
+@app.get("/api/situation/overview")
+def situation_overview(business_id: int | None = None):
+    db = SessionLocal()
+    try:
+        run_filter = []
+        if business_id is not None:
+            if db.get(Business, business_id) is None:
+                raise HTTPException(status_code=404, detail="企业不存在")
+            run_filter.append(MonitorRun.business_id == business_id)
+
+        business_count = db.query(func.count(Business.id)).scalar() or 0
+        model_count = len(PROVIDERS)
+
+        done_runs = (
+            db.query(MonitorRun)
+            .filter(*run_filter, MonitorRun.status == "done")
+            .order_by(MonitorRun.created_at.asc())
+            .all()
+        )
+
+        question_count = (
+            db.query(func.count(MonitorResult.id))
+            .join(MonitorRun, MonitorResult.run_id == MonitorRun.id)
+            .filter(*run_filter).scalar() or 0
+        )
+        total_citations = (
+            db.query(func.count(Citation.id))
+            .join(MonitorResult, Citation.result_id == MonitorResult.id)
+            .join(MonitorRun, MonitorResult.run_id == MonitorRun.id)
+            .filter(*run_filter).scalar() or 0
+        )
+
+        mention_trend = []
+        for run in done_runs:
+            m = run_metrics(db, run)
+            mention_trend.append({
+                "run_id": run.id,
+                "time": run.created_at.isoformat() if run.created_at else None,
+                "engine": run.engine,
+                "provider_name": m["provider_name"],
+                "stage": run.stage,
+                "mention_rate": m["mention_rate"] or 0,
+            })
+        latest_mention_rate = mention_trend[-1]["mention_rate"] if mention_trend else None
+
+        total_map = dict(
+            db.query(MonitorRun.engine, func.count(MonitorResult.id))
+            .join(MonitorResult, MonitorResult.run_id == MonitorRun.id)
+            .filter(*run_filter, MonitorRun.status == "done")
+            .group_by(MonitorRun.engine).all()
+        )
+        mentioned_map = dict(
+            db.query(MonitorRun.engine, func.count(MonitorResult.id))
+            .join(MonitorResult, MonitorResult.run_id == MonitorRun.id)
+            .filter(*run_filter, MonitorRun.status == "done", MonitorResult.mentioned == 1)
+            .group_by(MonitorRun.engine).all()
+        )
+        cit_map = dict(
+            db.query(MonitorRun.engine, func.count(Citation.id))
+            .join(MonitorResult, Citation.result_id == MonitorResult.id)
+            .join(MonitorRun, MonitorResult.run_id == MonitorRun.id)
+            .filter(*run_filter).group_by(MonitorRun.engine).all()
+        )
+        models = []
+        for key, cfg in sorted(PROVIDERS.items()):
+            total = total_map.get(key, 0)
+            mentioned = mentioned_map.get(key, 0) or 0
+            models.append({
+                "provider": key,
+                "label": cfg.get("label", key),
+                "total": total,
+                "mentioned": mentioned,
+                "mention_rate": round(mentioned / total * 100, 2) if total else 0,
+                "citations": cit_map.get(key, 0),
+            })
+
+        business_website = db.get(Business, business_id).website if business_id else None
+        platform_rows = db.query(Platform).order_by(Platform.sort_order.asc()).all()
+        platform_labels = {p.key: p.label for p in platform_rows}
+        citations = (
+            db.query(Citation.source_domain)
+            .join(MonitorResult, Citation.result_id == MonitorResult.id)
+            .join(MonitorRun, MonitorResult.run_id == MonitorRun.id)
+            .filter(*run_filter).all()
+        )
+        source_map = {p.key: 0 for p in platform_rows}
+        source_map["other"] = 0
+        for (domain,) in citations:
+            pk = domain_to_platform(domain, business_website)
+            source_map[pk] = source_map.get(pk, 0) + 1
+
+        sources = [
+            {"platform_key": pk, "platform_label": platform_labels.get(pk) or ("其他信源" if pk == "other" else pk), "total": source_map[pk]}
+            for pk in ([p.key for p in platform_rows] + ["other"])
+        ]
+        sources = sorted(sources, key=lambda s: -s["total"])
+
+        latest_runs = []
+        for run in reversed(done_runs[-5:]):
+            m = run_metrics(db, run)
+            latest_runs.append({
+                "run_id": run.id,
+                "time": run.created_at.isoformat() if run.created_at else None,
+                "provider_name": m["provider_name"],
+                "stage": run.stage,
+                "mention_rate": m["mention_rate"],
+                "total": m["total"],
+                "mentioned": m["mentioned"],
+            })
+
+        return {
+            "scope": "business" if business_id is not None else "all",
+            "kpi": {
+                "business_count": business_count,
+                "model_count": model_count,
+                "question_count": question_count,
+                "latest_mention_rate": latest_mention_rate,
+                "total_citations": total_citations,
+            },
+            "mention_trend": mention_trend,
+            "models": models,
+            "sources": sources,
+            "latest_runs": latest_runs,
+        }
+    finally:
+        db.close()
+        
+@app.get("/api/situation/overview")
+def situation_overview(business_id: int | None = None):
+    db = SessionLocal()
+    try:
+        run_filter = []
+        if business_id is not None:
+            if db.get(Business, business_id) is None:
+                raise HTTPException(status_code=404, detail="企业不存在")
+            run_filter.append(MonitorRun.business_id == business_id)
+        if not run_filter:
+            run_filter.append(true())
+
+        business_count = db.query(func.count(Business.id)).scalar() or 0
+        model_count = len(PROVIDERS)
+
+        done_runs = (
+            db.query(MonitorRun)
+            .filter(*run_filter, MonitorRun.status == "done")
+            .order_by(MonitorRun.created_at.asc())
+            .all()
+        )
+
+        question_count = (
+            db.query(func.count(MonitorResult.id))
+            .join(MonitorRun, MonitorResult.run_id == MonitorRun.id)
+            .filter(*run_filter).scalar() or 0
+        )
+        total_citations = (
+            db.query(func.count(Citation.id))
+            .join(MonitorResult, Citation.result_id == MonitorResult.id)
+            .join(MonitorRun, MonitorResult.run_id == MonitorRun.id)
+            .filter(*run_filter).scalar() or 0
+        )
+
+        mention_trend = []
+        for run in done_runs:
+            m = run_metrics(db, run)
+            mention_trend.append({
+                "run_id": run.id,
+                "time": run.created_at.isoformat() if run.created_at else None,
+                "engine": run.engine,
+                "provider_name": m["provider_name"],
+                "stage": run.stage,
+                "mention_rate": m["mention_rate"] or 0,
+            })
+        latest_mention_rate = mention_trend[-1]["mention_rate"] if mention_trend else None
+
+        total_map = dict(
+            db.query(MonitorRun.engine, func.count(MonitorResult.id))
+            .join(MonitorResult, MonitorResult.run_id == MonitorRun.id)
+            .filter(*run_filter, MonitorRun.status == "done")
+            .group_by(MonitorRun.engine).all()
+        )
+        mentioned_map = dict(
+            db.query(MonitorRun.engine, func.count(MonitorResult.id))
+            .join(MonitorResult, MonitorResult.run_id == MonitorRun.id)
+            .filter(*run_filter, MonitorRun.status == "done", MonitorResult.mentioned == 1)
+            .group_by(MonitorRun.engine).all()
+        )
+        cit_map = dict(
+            db.query(MonitorRun.engine, func.count(Citation.id))
+            .join(MonitorResult, Citation.result_id == MonitorResult.id)
+            .join(MonitorRun, MonitorResult.run_id == MonitorRun.id)
+            .filter(*run_filter).group_by(MonitorRun.engine).all()
+        )
+        models = []
+        for key, cfg in sorted(PROVIDERS.items()):
+            total = total_map.get(key, 0)
+            mentioned = mentioned_map.get(key, 0) or 0
+            models.append({
+                "provider": key,
+                "label": cfg.get("label", key),
+                "total": total,
+                "mentioned": mentioned,
+                "mention_rate": round(mentioned / total * 100, 2) if total else 0,
+                "citations": cit_map.get(key, 0),
+            })
+
+        business_website = db.get(Business, business_id).website if business_id else None
+        platform_rows = db.query(Platform).order_by(Platform.sort_order.asc()).all()
+        platform_labels = {p.key: p.label for p in platform_rows}
+        citations = (
+            db.query(Citation.source_domain)
+            .join(MonitorResult, Citation.result_id == MonitorResult.id)
+            .join(MonitorRun, MonitorResult.run_id == MonitorRun.id)
+            .filter(*run_filter).all()
+        )
+        source_map = {p.key: 0 for p in platform_rows}
+        source_map["other"] = 0
+        for (domain,) in citations:
+            pk = domain_to_platform(domain, business_website)
+            source_map[pk] = source_map.get(pk, 0) + 1
+
+        sources = [
+            {"platform_key": pk, "platform_label": platform_labels.get(pk) or ("其他信源" if pk == "other" else pk), "total": source_map[pk]}
+            for pk in ([p.key for p in platform_rows] + ["other"])
+        ]
+        sources = sorted(sources, key=lambda s: -s["total"])
+
+        latest_runs = []
+        for run in reversed(done_runs[-5:]):
+            m = run_metrics(db, run)
+            latest_runs.append({
+                "run_id": run.id,
+                "time": run.created_at.isoformat() if run.created_at else None,
+                "provider_name": m["provider_name"],
+                "stage": run.stage,
+                "mention_rate": m["mention_rate"],
+                "total": m["total"],
+                "mentioned": m["mentioned"],
+            })
+
+        return {
+            "scope": "business" if business_id is not None else "all",
+            "kpi": {
+                "business_count": business_count,
+                "model_count": model_count,
+                "question_count": question_count,
+                "latest_mention_rate": latest_mention_rate,
+                "total_citations": total_citations,
+            },
+            "mention_trend": mention_trend,
+            "models": models,
+            "sources": sources,
+            "latest_runs": latest_runs,
+        }
     finally:
         db.close()
 
