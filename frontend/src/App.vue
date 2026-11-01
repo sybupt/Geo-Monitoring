@@ -26,10 +26,12 @@ import { getProviders } from './api'
 const navItems = [
   { path: '/members', title: '会员管理' },
   { path: '/overview', title: '效果总览' },
+  { path: '/citation-insight', title: '引用洞察' },
   { path: '/questions', title: '问题工厂' },
   { path: '/feeding', title: '投喂中心' },
   { path: '/reports', title: '检测报告' },
 ]
+
 
 const providers = ref([])
 onMounted(async () => {

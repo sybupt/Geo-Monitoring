@@ -347,6 +347,34 @@ def citations_for_results(db, result_ids):
             "domain": c.source_domain,
         })
     return mapping
+# ===== 域名 → 平台映射（引用洞察用）=====
+DOMAIN_TO_PLATFORM = {
+    "zhihu.com": "zhihu",
+    "zhuanlan.zhihu.com": "zhihu",
+    "xiaohongshu.com": "rednote",
+    "xhslink.com": "rednote",
+    "mp.weixin.qq.com": "wechat",
+    "baijiahao.baidu.com": "baidu",
+}
+DOMAIN_SUFFIX_TO_PLATFORM = [
+    (".gov.cn", "government"),
+]
+
+def domain_to_platform(domain, business_website=None):
+    """域名 → 平台 key，匹配不到返回 "other"（其他信源）"""
+    if not domain:
+        return "other"
+    d = domain.strip().lower()
+    if d in DOMAIN_TO_PLATFORM:
+        return DOMAIN_TO_PLATFORM[d]
+    for suffix, key in DOMAIN_SUFFIX_TO_PLATFORM:
+        if d.endswith(suffix):
+            return key
+    if business_website:
+        wd = business_website.strip().lower().split("//")[-1].split("/")[0].split(":")[0]
+        if wd and (d == wd or d.endswith("." + wd)):
+            return "official_site"
+    return "other"
 
 def report_html(snapshot):
     before_rate = snapshot["baseline"]["mention_rate"]
@@ -520,6 +548,93 @@ def list_citations(business_id: int):
         ]
     finally:
         db.close()
+        
+@app.get("/api/citation-insight/source-aggregation")
+def citation_source_aggregation(business_id: int):
+    db = SessionLocal()
+    try:
+        business = db.get(Business, business_id)
+        if business is None:
+            raise HTTPException(status_code=404, detail="企业不存在")
+
+        plan = db.query(Plan).filter(Plan.key == business.plan_key).first()
+        plan_keys = json.loads(plan.platform_keys or "[]") if plan else []
+
+        published_channels = {
+            ch[0] for ch in (
+                db.query(FeedingAsset.channel)
+                .join(FeedingPlan, FeedingAsset.plan_id == FeedingPlan.id)
+                .filter(
+                    FeedingPlan.business_id == business_id,
+                    FeedingAsset.status == "published",
+                )
+                .distinct()
+                .all()
+            )
+        }
+
+        platforms = {p.key: p.label for p in db.query(Platform).all()}
+
+        citations = (
+            db.query(Citation, MonitorRun.engine, MonitorRun.stage)
+            .join(MonitorResult, Citation.result_id == MonitorResult.id)
+            .join(MonitorRun, MonitorResult.run_id == MonitorRun.id)
+            .filter(MonitorRun.business_id == business_id)
+            .all()
+        )
+
+        agg = {}
+        for citation, engine, stage in citations:
+            pk = domain_to_platform(citation.source_domain, business.website)
+            node = agg.setdefault(pk, {}).setdefault(engine, {"baseline": 0, "after": 0})
+            if stage in ("baseline", "after"):
+                node[stage] += 1
+
+        provider_list = [
+            {"key": key, "label": cfg.get("label", key)}
+            for key, cfg in sorted(PROVIDERS.items())
+        ]
+
+        rows = []
+        for pk, engines in agg.items():
+            counts, b_total, a_total = {}, 0, 0
+            for p in provider_list:
+                node = engines.get(p["key"], {"baseline": 0, "after": 0})
+                counts[p["key"]] = node["after"]
+                b_total += node["baseline"]
+                a_total += node["after"]
+            change = a_total - b_total
+            if b_total == 0 and a_total > 0:
+                status = "new"
+            elif b_total > 0 and a_total > 0:
+                status = "sustained"
+            elif b_total > 0 and a_total == 0:
+                status = "lost"
+            else:
+                status = "none"
+            if pk == "other":
+                investment = "gap"
+            elif pk in plan_keys and pk in published_channels:
+                investment = "fed"
+            elif pk in plan_keys:
+                investment = "owned_unfed"
+            else:
+                investment = "gap"
+            rows.append({
+                "platform_key": pk,
+                "platform_label": platforms.get(pk) or ("其他信源" if pk == "other" else pk),
+                "counts": counts,
+                "total": a_total,
+                "change": change,
+                "status": status,
+                "investment": investment,
+            })
+
+        rows.sort(key=lambda r: (-r["total"], r["platform_key"]))
+        return {"providers": provider_list, "rows": rows}
+    finally:
+        db.close()
+
 
 @app.get("/api/plans")
 def list_plans():
