@@ -3,7 +3,7 @@ import re
 from app.services.monitor_service import PROVIDERS, ask_text
 
 
-def generate_questions(business_data, provider_id, count):
+def generate_questions(business_data, provider_id, count, brief=None):
     """用 AI 生成企业相关的监测问题，返回 [{'text','category'}]"""
     if provider_id not in PROVIDERS:
         raise ValueError(f"未知模型：{provider_id}")
@@ -13,8 +13,12 @@ def generate_questions(business_data, provider_id, count):
     name = business_data.get("name", "")
     region = business_data.get("region", "")
     category = business_data.get("category", "")
+    brief_text = (brief or "").strip()
+    brief_section = ""
+    if brief_text:
+        brief_section = f"\n用户补充描述：\n{brief_text}\n"
 
-    prompt = f"""你是本地生活搜索专家。请站在真实用户的角度，列出用户可能向 AI（如豆包、DeepSeek、Kimi）提问的、关于「{name}」及其所在地区的问题。
+    prompt = f"""你是本地生活搜索专家。请站在真实用户的角度，列出用户可能向 AI（如豆包、DeepSeek、Kimi）提问的、关于「{name}」及其所在地区的问题。{brief_section}
 
 企业信息：
 - 名称：{name}
@@ -26,6 +30,7 @@ def generate_questions(business_data, provider_id, count):
 2. 覆盖：好吃/推荐、干净卫生、适合带娃、本地人推荐、性价比、停车/交通、营业时间、特色菜等角度
 3. 每个问题要像真实用户会问的自然语言
 4. 适当融入地域名（如"{region}哪里..."）
+5. 若用户补充描述中给出了特殊场景、活动、卖点，也要体现在问题中
 
 请严格按照以下 JSON 数组格式输出（不要输出其他内容）：
 [{{"text": "问题内容", "category": "问题分类"}}]"""

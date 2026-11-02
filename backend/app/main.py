@@ -191,6 +191,7 @@ class QuestionSetGenerate(BaseModel):
     business_id: int = Field(gt=0)
     provider: Literal["kimi_search", "deepseek"]
     count: int = Field(default=12, ge=3, le=30)
+    brief: str = Field(default="", max_length=2000)
 
 
 class QuestionInput(BaseModel):
@@ -200,6 +201,7 @@ class QuestionInput(BaseModel):
 
 class QuestionSetApproval(BaseModel):
     questions: list[QuestionInput] = Field(min_items=1, max_items=100)
+    approved: bool = True
 
 
 class FeedingPlanInput(BaseModel):
@@ -1176,7 +1178,12 @@ def generate_question_set(request: QuestionSetGenerate):
         if business is None:
             raise HTTPException(status_code=404, detail="企业不存在")
         try:
-            candidates = generate_questions(business_data(business), request.provider, request.count)
+            candidates = generate_questions(
+                business_data(business),
+                request.provider,
+                request.count,
+                brief=request.brief,
+            )
         except (ValueError, RuntimeError) as exc:
             raise HTTPException(status_code=502, detail=str(exc)) from exc
         version = (
@@ -1243,15 +1250,6 @@ def get_question_set(question_set_id: int):
 
 @app.post("/api/question-sets/{question_set_id}/approve")
 def approve_question_set(question_set_id: int, request: QuestionSetApproval):
-    cleaned = []
-    seen = set()
-    for item in request.questions:
-        text = item.text.strip()
-        if text and text.casefold() not in seen:
-            cleaned.append((text, item.category.strip() or None))
-            seen.add(text.casefold())
-    if not cleaned:
-        raise HTTPException(status_code=400, detail="审核后至少保留一个问题")
     db = SessionLocal()
     try:
         question_set = db.get(QuestionSet, question_set_id)
@@ -1259,6 +1257,22 @@ def approve_question_set(question_set_id: int, request: QuestionSetApproval):
             raise HTTPException(status_code=404, detail="问题集不存在")
         if question_set.status != "draft":
             raise HTTPException(status_code=409, detail="已审核的问题集不可修改，请生成新版本")
+
+        if not request.approved:
+            db.delete(question_set)
+            db.commit()
+            return {"deleted": True, "question_set_id": question_set_id}
+
+        cleaned = []
+        seen = set()
+        for item in request.questions:
+            text = item.text.strip()
+            if text and text.casefold() not in seen:
+                cleaned.append((text, item.category.strip() or None))
+                seen.add(text.casefold())
+        if not cleaned:
+            raise HTTPException(status_code=400, detail="审核后至少保留一个问题")
+
         for item in list(question_set.items):
             db.delete(item)
         db.flush()

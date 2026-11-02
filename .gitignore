@@ -29,3 +29,9 @@ frontend/dist/
 
 # 结果文件
 results/*.json
+
+# 一键操作
+start-dev.bat
+stop-dev.bat
+push.bat
+sync-server.bat
