@@ -12,6 +12,16 @@
       </select>
     </div>
 
+    <div class="workflow-summary">
+      <div v-for="(step, index) in reportWorkflowSteps" :key="step.id" class="workflow-step" :class="{ active: currentReportStep === index + 1, done: currentReportStep > index + 1 }">
+        <span class="step-no">{{ index + 1 }}</span>
+        <div>
+          <strong>{{ step.title }}</strong>
+          <small>{{ step.description }}</small>
+        </div>
+      </div>
+    </div>
+
     <!-- 投喂状态与实时检测 -->
     <section class="card">
       <h2>投喂状态与实时检测</h2>
@@ -245,6 +255,19 @@ const comparablePairs = computed(() => {
         pairs.push([b, a])
   return pairs
 })
+const currentReportStep = computed(() => {
+  if (reports.value.length) return 4
+  if (afterRuns.value.length) return 3
+  if (baselineRuns.value.length) return 2
+  if (questionSets.value.some(q => q.status === 'active')) return 1
+  return 1
+})
+const reportWorkflowSteps = computed(() => [
+  { id: 'question-set', title: '问题集审批', description: '启用固定测试题库' },
+  { id: 'baseline', title: '基线检测', description: '完成投喂前采样' },
+  { id: 'after', title: '投喂后复测', description: '验证内容效果提升' },
+  { id: 'report', title: '效果报告', description: '形成对比结论和数据快照' },
+])
 const publishedPlans = computed(() =>
   feedingPlans.value.filter(p => p.assets.some(a => a.status === 'published'))
 )
@@ -410,6 +433,13 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.workflow-summary { display: grid; grid-template-columns: repeat(4, minmax(180px, 1fr)); gap: 16px; margin: 0 0 18px; }
+.workflow-step { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; border: 1px solid #e4ebe6; background: #f9faf9; }
+.workflow-step.active { border-color: #9ad6c4; background: #edf9f4; }
+.workflow-step.done { border-color: #b7dcc8; background: #ecfdf5; }
+.step-no { width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #dceee8; color: #116b55; font-weight: 700; }
+.workflow-step strong { display: block; font-size: 14px; }
+.workflow-step small { color: #70817b; }
 .card { background: #fff; border: 1px solid #e4ebe6; border-radius: 14px; padding: 22px 24px; margin-bottom: 20px; }
 .card h2 { margin: 0 0 16px; font-size: 17px; }
 .card h3 { font-size: 15px; margin: 22px 0 12px; }

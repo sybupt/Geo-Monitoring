@@ -13,6 +13,16 @@
       <span v-if="planInfo" class="muted">当前套餐：{{ planInfo.plan_label }}</span>
     </div>
 
+    <div class="workflow-summary">
+      <div v-for="(step, index) in feedingWorkflowSteps" :key="step.id" class="workflow-step" :class="{ active: currentFeedingStep === index + 1, done: currentFeedingStep > index + 1 }">
+        <span class="step-no">{{ index + 1 }}</span>
+        <div>
+          <strong>{{ step.title }}</strong>
+          <small>{{ step.description }}</small>
+        </div>
+      </div>
+    </div>
+
     <!-- 创建投喂计划 -->
     <section class="card">
       <h2>创建投喂计划</h2>
@@ -336,6 +346,20 @@ const baselineRuns = computed(() => {
 
 const afterRunsAll = computed(() => monitorRuns.value.filter(r => r.stage === 'after'))
 
+const currentFeedingStep = computed(() => {
+  if (publishedAssets.value.length && baselineRuns.value.length) return 4
+  if (publishedAssets.value.length) return 3
+  if (plans.value.some(p => p.assets && p.assets.length)) return 2
+  return 1
+})
+
+const feedingWorkflowSteps = computed(() => [
+  { id: 'plan', title: '创建投喂计划', description: '填写业务信息与渠道配置' },
+  { id: 'generate', title: '生成素材', description: 'AI 生成平台文案和指纹' },
+  { id: 'publish', title: '发布审核', description: '发文、核验链接和可引用性' },
+  { id: 'monitor', title: '检测复测', description: '追踪提及率和效果变化' },
+])
+
 function questionSetLabel(id) {
   const qs = questionSets.value.find(q => q.id === id)
   return qs ? `v${qs.version}` : '历史问题'
@@ -605,6 +629,13 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.workflow-summary { display: grid; grid-template-columns: repeat(4, minmax(180px, 1fr)); gap: 16px; margin: 0 0 18px; }
+.workflow-step { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; border: 1px solid #e4ebe6; background: #f9faf9; }
+.workflow-step.active { border-color: #9ad6c4; background: #edf9f4; }
+.workflow-step.done { border-color: #b7dcc8; background: #ecfdf5; }
+.step-no { width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #dceee8; color: #116b55; font-weight: 700; }
+.workflow-step strong { display: block; font-size: 14px; }
+.workflow-step small { color: #70817b; }
 .card { background: #fff; border: 1px solid #e4ebe6; border-radius: 14px; padding: 22px 24px; margin-bottom: 20px; }
 .card h2 { margin: 0 0 16px; font-size: 17px; }
 .form-grid { display: grid; gap: 12px; }
