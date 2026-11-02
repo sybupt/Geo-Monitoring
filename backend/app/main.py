@@ -2,6 +2,7 @@ from datetime import datetime
 from html import escape
 from io import BytesIO
 import json
+import re
 from pathlib import Path
 from typing import Literal
 from urllib.parse import urlsplit
@@ -23,11 +24,13 @@ from app.models import (
 
 from app.services.monitor_service import (
     PROVIDERS,
+    ask_text,
     create_monitor_runs,
     list_providers,
     questions_for_business,
     run_monitor,
 )
+
 from app.services.feeding_service import CHANNEL_LABELS, build_assets
 from app.services.question_service import generate_questions
 
@@ -820,7 +823,7 @@ def situation_overview(business_id: int | None = None):
         }
     finally:
         db.close()
-        
+
 @app.get("/api/situation/overview")
 def situation_overview(business_id: int | None = None):
     db = SessionLocal()
@@ -949,6 +952,53 @@ def situation_overview(business_id: int | None = None):
         }
     finally:
         db.close()
+
+FEEDING_CHAT_SYSTEM = """你是 GEO 投喂信息搜集助手。通过对话向企业客户搜集信息，最终产出可生成"高引用率文案"的结构化资料。
+
+需要搜集的要素（尽量齐全）：
+1. 企业名称、所在地区、所属品类
+2. 具体数据：成立时间、服务人数、评分/好评率、获奖荣誉、门店地址（有多少搜集多少）
+3. 核心卖点/独特优势（1-3 条，用于写"结论句"）
+4. 客户会关心的常见问题（3-5 个，用于写 FAQ）
+5. 如有活动/促销/事件：活动名称、时间、地点、具体描述
+
+对话规则：
+- 每次最多追问 2 个缺失要素，不要一次问太多
+- 客户已经提供的，不要重复问
+- 语气友好、专业、简洁
+- 当要素基本齐全时，在回复末尾另起一行输出（没有的字段用空字符串）：
+【BRIEF】{"business_keywords":"...","activity_name":"...","promotional_points":"...","extra_data":"...","event_time":"...","event_location":"...","event_description":"...","faq":["...","..."]}
+- 在此之前只对话，不要输出【BRIEF】"""
+
+
+
+@app.post("/api/feeding/chat")
+def feeding_chat(payload: dict):
+    provider_id = payload.get("provider_id", "deepseek")
+    history = payload.get("history", [])
+    if not history:
+        raise HTTPException(status_code=400, detail="对话内容不能为空")
+
+    convo = "\n".join(
+        f"{'客户' if m.get('role') == 'user' else '助手'}：{m.get('content', '')}"
+        for m in history
+    )
+    prompt = f"{FEEDING_CHAT_SYSTEM}\n\n已有对话：\n{convo}\n\n请继续回复客户。"
+
+    raw = ask_text(provider_id, prompt)
+
+    brief = None
+    reply = raw
+    m = re.search(r"【BRIEF】\s*(\{.*\})", raw, re.DOTALL)
+    if m:
+        try:
+            brief = json.loads(m.group(1))
+        except Exception:
+            brief = None
+        reply = raw[:m.start()].strip()
+
+    return {"reply": reply, "brief": brief}
+
 
 @app.get("/api/plans")
 def list_plans():

@@ -16,6 +16,26 @@
     <!-- 创建投喂计划 -->
     <section class="card">
       <h2>创建投喂计划</h2>
+      <button class="btn" style="margin-bottom:12px" @click="chatOpen = !chatOpen">
+        {{ chatOpen ? '收起对话创建' : '💬 对话式创建' }}
+      </button>
+
+      <div v-if="chatOpen" class="chat-panel">
+        <div class="chat-messages">
+          <div v-if="!chatHistory.length" class="muted">用一句话描述你要推广的企业，AI 会引导你补充关键信息。</div>
+          <div v-for="(m, i) in chatHistory" :key="i" :class="['chat-msg', m.role === 'user' ? 'user' : 'ai']">{{ m.content }}</div>
+          <div v-if="chatLoading" class="chat-msg ai">思考中…</div>
+        </div>
+        <div v-if="chatBrief" class="chat-brief">
+          <span>✅ 关键要素已搜集完成</span>
+          <button class="btn primary" @click="applyBrief">填入表单</button>
+        </div>
+        <div class="chat-input-row">
+          <input v-model="chatInput" class="input" placeholder="例如：我想推广恩施我最美摄影店" @keyup.enter="sendChat" />
+          <button class="btn primary" :disabled="chatLoading" @click="sendChat">发送</button>
+        </div>
+      </div>
+
       <div class="form-grid">
         <div class="form-row"><label>计划名称</label>
           <input v-model="plan.name" class="input" placeholder="例如：恩施菜馆宣传计划" /></div>
@@ -49,7 +69,48 @@
     </section>
 
     <!-- 投喂计划列表 -->
-    <section v-for="p in plans" :key="p.id" class="card">
+        <!-- 历史投喂看板 -->
+    <section class="card">
+      <h2>历史投喂看板</h2>
+      <div class="board-scroll">
+        <table class="board">
+          <thead>
+            <tr>
+              <th class="board-corner">
+                <span class="corner-col">投喂平台</span>
+                <span class="corner-row">投喂任务</span>
+              </th>
+              <th v-for="(label, key) in CHANNELS" :key="key" class="board-platform">{{ label }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(p, i) in plans" :key="p.id">
+              <td class="board-task-label"
+                  :class="{ 'board-task-active': activePlanId === p.id }"
+                  @click="togglePlanDetail(p.id)">
+                <div class="task-no">#{{ i + 1 }}</div>
+                <div class="task-name">{{ p.name }}</div>
+                <div class="task-hint">点击查看</div>
+              </td>
+              <td v-for="(label, key) in CHANNELS" :key="key" class="board-cell"
+                  :class="{ 'board-task-active': activePlanId === p.id }"
+                  :title="`${p.name} · ${label}`">
+                <span :class="cellClass(assetOf(p, key))">{{ cellText(assetOf(p, key)) }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p v-if="!plans.length" class="muted">还没有投喂任务。</p>
+    </section>
+
+
+    
+    <div v-if="activePlanId" class="detail-filter-bar">
+      <span>当前查看：{{ plans.find(p => p.id === activePlanId)?.name || '' }}</span>
+      <button class="btn small" @click="activePlanId = null">显示全部任务</button>
+    </div>
+    <section v-for="p in plans" v-show="!activePlanId || p.id === activePlanId" :key="p.id" class="card">
       <div class="plan-header">
         <h2>{{ p.name }}</h2>
         <span :class="['tag', planStatusClass(p.status)]">{{ planStatusLabel(p.status) }}</span>
@@ -217,6 +278,7 @@ const copiedId = ref(null)
 const businessPlatforms = ref([])
 const planInfo = ref(null)
 const previewingId = ref(null)
+const activePlanId = ref(null)
 const monitorRuns = ref([])
 const questionSets = ref([])
 const runningAfter = ref(false)
@@ -291,6 +353,12 @@ const plan = reactive({
   provider: 'deepseek', channels: [],
 })
 
+const chatOpen = ref(false)
+const chatHistory = ref([])
+const chatInput = ref('')
+const chatBrief = ref(null)
+const chatLoading = ref(false)
+
 const configuredProviders = computed(() => providers.value.filter(p => p.configured))
 const allowedChannels = computed(() => {
   if (!businessPlatforms.value.length) return CHANNELS
@@ -305,6 +373,30 @@ function planStatusLabel(s) { return { draft: '草稿', in_progress: '进行中'
 function planStatusClass(s) { return { draft: 'draft', in_progress: 'active', published: 'published' }[s] || '' }
 function assetStatusLabel(s) { return { draft: '待审核', reviewed: '已审核', published: '已发布' }[s] || s }
 function assetStatusClass(s) { return { draft: 'draft', reviewed: 'active', published: 'published' }[s] || '' }
+function assetOf(plan, channel) {
+  return plan.assets.find(a => a.channel === channel)
+}
+function cellText(asset) {
+  if (!asset) return '·'
+  if (asset.status === 'published') return '✅'
+  if (asset.status === 'reviewed') return '🔵'
+  return '🟡'
+}
+function cellClass(asset) {
+  if (!asset) return 'cell-none'
+  if (asset.status === 'published') return 'cell-pub'
+  if (asset.status === 'reviewed') return 'cell-rev'
+  return 'cell-draft'
+}
+
+function togglePlanDetail(id) {
+  if (activePlanId.value === id) {
+    activePlanId.value = null
+  } else {
+    activePlanId.value = id
+  }
+}
+
 function campaignSummary(input) { return Object.values(input || {}).filter(v => v).join(' · ') }
 function themeColor(channel) { return CHANNEL_THEMES[channel] || '#116b55' }
 function renderMarkdown(text) { return marked.parse(text || '') }
@@ -347,6 +439,49 @@ async function onBusinessChange() {
   await loadPlans()
   await loadMonitorData()
 }
+
+async function sendChat() {
+  const text = chatInput.value.trim()
+  if (!text || chatLoading.value) return
+  chatHistory.value.push({ role: 'user', content: text })
+  chatInput.value = ''
+  chatLoading.value = true
+  try {
+    const { data } = await api.post('/feeding/chat', {
+      provider_id: plan.provider || 'deepseek',
+      history: chatHistory.value,
+    })
+    chatHistory.value.push({ role: 'assistant', content: data.reply })
+    if (data.brief) chatBrief.value = data.brief
+  } catch (e) {
+    chatHistory.value.push({ role: 'assistant', content: '出错了：' + (e.response?.data?.detail || e.message) })
+  } finally {
+    chatLoading.value = false
+  }
+}
+
+function applyBrief() {
+  const b = chatBrief.value
+  if (!b) return
+  if (b.business_keywords) plan.business_keywords = b.business_keywords
+  if (b.activity_name) plan.activity_name = b.activity_name
+  if (b.event_time) plan.event_time = b.event_time
+  if (b.event_location) plan.event_location = b.event_location
+  if (b.event_description) plan.event_description = b.event_description
+
+  const parts = []
+  if (b.promotional_points) parts.push(b.promotional_points)
+  if (b.extra_data) parts.push('关键数据：' + b.extra_data)
+  if (b.faq && b.faq.length) parts.push('常见问题：' + b.faq.join('；'))
+  plan.promotional_points = parts.join('\n')
+
+  if (!plan.name.trim()) {
+    const biz = businesses.value.find(x => x.id === businessId.value)
+    plan.name = (biz?.name || '企业') + '宣传计划'
+  }
+  chatOpen.value = false
+}
+
 
 async function createPlan() {
   if (!plan.name.trim()) { error.value = '请填写计划名称'; return }
@@ -469,6 +604,38 @@ textarea { width: 100%; }
 .preview-content { font-size: 14.5px; color: #26332e; line-height: 1.7; }
 .hint { color: #94a3b8; font-size: 13px; padding: 9px 0; display: inline-block; }
 .feed-summary { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; font-size: 14px; }
+.board-scroll { overflow-x: auto; overflow-y: auto; max-height: 480px; }
+.board { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 720px; }
+.board th, .board td { border: 1px solid #e4ebe6; padding: 8px 12px; text-align: center; font-size: 13px; background: #fff; }
+.board thead th { position: sticky; top: 0; z-index: 2; background: #f0f5f1; }
+.board-corner { position: sticky; left: 0; top: 0; z-index: 3; min-width: 150px; min-height: 56px; background: #f0f5f1; }
+.board-corner::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom left, transparent 48%, #cbd5d1 48%, #cbd5d1 52%, transparent 52%); pointer-events: none; }
+.corner-col { position: absolute; top: 6px; right: 8px; color: #4f46e5; font-size: 12px; font-weight: 600; z-index: 1; }
+.corner-row { position: absolute; bottom: 6px; left: 8px; color: #116b55; font-size: 12px; font-weight: 600; z-index: 1; }
+.board-platform { min-width: 90px; white-space: nowrap; color: #116b55; font-weight: 600; }
+.board-task-label { position: sticky; left: 0; z-index: 1; background: #fff; text-align: left; cursor: pointer; min-width: 150px; }
+.board-task-label:hover { background: #f6faf8; }
+.board-task-active { background: #e9f5ef !important; }
+.task-no { font-size: 12px; color: #70817b; }
+.task-name { font-weight: 600; font-size: 13px; color: #182d2a; }
+.task-hint { font-size: 11px; color: #9aa8a1; }
+.board-cell { min-width: 44px; }
+.board-cell.board-task-active { background: #f2faf6; }
+.cell-none { color: #cbd5d1; }
+.cell-pub { color: #16a34a; font-weight: 700; }
+.cell-rev { color: #4f46e5; }
+.cell-draft { color: #b45309; }
+.detail-filter-bar { display: flex; align-items: center; justify-content: space-between; background: #eef2ff; border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; font-size: 14px; }
+
+
 .channel-tag { background: #e9f5ef; color: #116b55; padding: 3px 12px; border-radius: 999px; font-size: 13px; }
+.chat-panel { border: 1px solid #e4ebe6; border-radius: 12px; padding: 14px; margin-bottom: 16px; background: #fafcfb; }
+.chat-messages { max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.chat-msg { max-width: 80%; padding: 9px 13px; border-radius: 12px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+.chat-msg.user { align-self: flex-end; background: #116b55; color: #fff; }
+.chat-msg.ai { align-self: flex-start; background: #fff; border: 1px solid #e4ebe6; }
+.chat-brief { display: flex; align-items: center; justify-content: space-between; background: #e9f5ef; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-size: 14px; }
+.chat-input-row { display: flex; gap: 10px; }
+.chat-input-row .input { flex: 1; }
 
 </style>
