@@ -107,6 +107,8 @@ class FeedingAsset(Base):
     channel = Column(String)
     title = Column(String)
     content = Column(Text)
+    citability = Column(Text, default=None)
+    fingerprints = Column(Text, default=None)
     status = Column(String, default="draft")
     published_url = Column(String)
     published_at = Column(DateTime)
@@ -143,6 +145,7 @@ class Platform(Base):
     authority = Column(Integer)
     difficulty = Column(Integer)
     score = Column(Float)
+    ai_cite_weight = Column(Float, default=0)
     publish_url = Column(String)
     sort_order = Column(Integer, default=0)
 

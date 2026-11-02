@@ -56,11 +56,18 @@
             <option v-for="p in configuredProviders" :key="p.id" :value="p.id">{{ p.label }}</option>
           </select></div>
         <div class="form-row"><label>目标平台</label>
-          <div class="check-group">
-            <label v-for="(label, key) in allowedChannels" :key="key" class="check">
-              <input type="checkbox" :value="key" v-model="plan.channels" /> {{ label }}
-            </label>
-          </div></div>
+          <div class="check-group-wrap">
+            <div class="check-group">
+              <label v-for="(label, key) in allowedChannels" :key="key" class="check">
+                <input type="checkbox" :value="key" v-model="plan.channels" />
+                <span>{{ label }}</span>
+                <span v-if="citeWeight(key) >= 7" class="cite-hot">🔥 高引用</span>
+                <span class="cite-weight">引用权重 {{ citeWeight(key) }}</span>
+              </label>
+            </div>
+            <p class="cite-tip">建议优先投政府平台、文旅局、企业官网，AI 更易引用</p>
+          </div>
+        </div>
       </div>
       <button class="btn primary" :disabled="creating" @click="createPlan">
         {{ creating ? '生成中…（约 1~2 分钟）' : '生成平台文案' }}
@@ -120,8 +127,16 @@
       <div v-for="asset in p.assets" :key="asset.id" class="asset">
         <div class="asset-header">
           <b>{{ asset.channel_name }}</b>
+          <span v-if="asset.citability" :class="['tag', citabilityClass(asset.citability)]">
+            可引用性 {{ asset.citability.score }} 分
+          </span>
+          <button v-if="asset.citability && asset.citability.score < 60" class="btn small" @click="regenerateAsset(asset)">
+            🔄 重新生成
+          </button>
           <span :class="['tag', assetStatusClass(asset.status)]">{{ assetStatusLabel(asset.status) }}</span>
         </div>
+
+
 
         <div v-if="asset.status === 'published'">
           <p class="asset-title">{{ asset.title }}</p>
@@ -244,6 +259,17 @@ const CHANNELS = {
   government: '政府平台',
 }
 
+const AI_CITE_WEIGHTS = {
+  government: 9.5,
+  tourism_bureau: 8.5,
+  official_site: 7.5,
+  zhihu: 7.0,
+  baidu: 6.5,
+  wechat: 5.0,
+  rednote: 4.0,
+  wechat_personal: 1.0,
+}
+
 const PLATFORM_URLS = {
   rednote: 'https://creator.xiaohongshu.com',
   zhihu: 'https://zhuanlan.zhihu.com/write',
@@ -276,6 +302,7 @@ const creating = ref(false)
 const loaded = ref(false)
 const copiedId = ref(null)
 const businessPlatforms = ref([])
+const platformDetailMap = ref({})
 const planInfo = ref(null)
 const previewingId = ref(null)
 const activePlanId = ref(null)
@@ -361,18 +388,36 @@ const chatLoading = ref(false)
 
 const configuredProviders = computed(() => providers.value.filter(p => p.configured))
 const allowedChannels = computed(() => {
-  if (!businessPlatforms.value.length) return CHANNELS
-  const filtered = {}
-  for (const key of businessPlatforms.value) {
-    if (CHANNELS[key]) filtered[key] = CHANNELS[key]
-  }
-  return filtered
+  const keys = businessPlatforms.value.length
+    ? businessPlatforms.value.filter(key => CHANNELS[key])
+    : Object.keys(CHANNELS)
+
+  return Object.fromEntries(
+    keys
+      .sort((a, b) => (citeWeight(b) - citeWeight(a)))
+      .map(key => [key, CHANNELS[key]])
+  )
 })
 
 function planStatusLabel(s) { return { draft: '草稿', in_progress: '进行中', published: '已发布' }[s] || s }
 function planStatusClass(s) { return { draft: 'draft', in_progress: 'active', published: 'published' }[s] || '' }
 function assetStatusLabel(s) { return { draft: '待审核', reviewed: '已审核', published: '已发布' }[s] || s }
 function assetStatusClass(s) { return { draft: 'draft', reviewed: 'active', published: 'published' }[s] || '' }
+function citeWeight(key) {
+  return platformDetailMap.value[key]?.ai_cite_weight ?? AI_CITE_WEIGHTS[key] ?? 0
+}
+function citabilityClass(c) {
+  if (!c) return ''
+  return c.score >= 60 ? 'active' : 'draft'
+}
+async function regenerateAsset(asset) {
+  try {
+    await api.post(`/feeding-assets/${asset.id}/regenerate`, { provider: plan.provider || 'deepseek' })
+    await loadPlans()
+  } catch (e) { error.value = e.response?.data?.detail || e.message }
+}
+
+
 function assetOf(plan, channel) {
   return plan.assets.find(a => a.channel === channel)
 }
@@ -430,8 +475,10 @@ async function loadBusinessPlatforms() {
     const { data } = await api.get(`/businesses/${businessId.value}/platforms`)
     planInfo.value = data
     businessPlatforms.value = data.platforms.map(p => p.key)
+    platformDetailMap.value = {}
+    for (const p of data.platforms) platformDetailMap.value[p.key] = p
     plan.channels = [...businessPlatforms.value]
-  } catch (e) { businessPlatforms.value = [] }
+  } catch (e) { businessPlatforms.value = []; platformDetailMap.value = {} }
 }
 
 async function onBusinessChange() {
@@ -573,8 +620,22 @@ textarea { width: 100%; }
 .tag.draft { background: #fff7e6; color: #b45309; }
 .tag.active { background: #e9f5ef; color: #116b55; }
 .tag.published { background: #eef2ff; color: #4f46e5; }
+.check-group-wrap { display: flex; flex-direction: column; gap: 8px; width: 100%; }
 .check-group { display: flex; gap: 14px; flex-wrap: wrap; }
 .check { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.cite-hot {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #116b55; color: #fff; border-radius: 999px; padding: 3px 10px;
+  font-size: 11px; font-weight: 700; line-height: 1.4;
+}
+.cite-weight {
+  background: #e9f5ef; color: #116b55; border-radius: 999px; padding: 2px 8px;
+  font-size: 11px; font-weight: 600;
+}
+.cite-tip {
+  margin: 0; color: #116b55; font-size: 12px; font-weight: 600;
+  background: #f1faf5; border: 1px solid #d6ebde; border-radius: 8px; padding: 8px 10px;
+}
 .error { color: #b91c1c; font-size: 13px; margin-top: 10px; }
 .plan-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
 .asset { border: 1px solid #e4ebe6; border-radius: 12px; padding: 16px; margin-top: 16px; }
@@ -610,7 +671,7 @@ textarea { width: 100%; }
 .board thead th { position: sticky; top: 0; z-index: 2; background: #f0f5f1; }
 .board-corner { position: sticky; left: 0; top: 0; z-index: 3; min-width: 150px; min-height: 56px; background: #f0f5f1; }
 .board-corner::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom left, transparent 48%, #cbd5d1 48%, #cbd5d1 52%, transparent 52%); pointer-events: none; }
-.corner-col { position: absolute; top: 6px; right: 8px; color: #4f46e5; font-size: 12px; font-weight: 600; z-index: 1; }
+.corner-col { position: absolute; top: 6px; right: 8px; color: #116b55; font-size: 12px; font-weight: 600; z-index: 1; }
 .corner-row { position: absolute; bottom: 6px; left: 8px; color: #116b55; font-size: 12px; font-weight: 600; z-index: 1; }
 .board-platform { min-width: 90px; white-space: nowrap; color: #116b55; font-weight: 600; }
 .board-task-label { position: sticky; left: 0; z-index: 1; background: #fff; text-align: left; cursor: pointer; min-width: 150px; }

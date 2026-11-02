@@ -3,6 +3,17 @@ from app.database import SessionLocal, engine, Base
 import app.models
 from app.models import Platform, Plan
 
+WEIGHTS = {
+    "government": 9.5,
+    "tourism_bureau": 8.5,
+    "official_site": 7.5,
+    "zhihu": 7.0,
+    "baidu": 6.5,
+    "wechat": 5.0,
+    "rednote": 4.0,
+    "wechat_personal": 1.0,
+}
+
 PLATFORMS = [
     {"key": "wechat_personal", "label": "微信个人号", "authority": 2,  "difficulty": 3, "publish_url": "", "sort_order": 1},
     {"key": "wechat",          "label": "微信公众号", "authority": 6,  "difficulty": 5, "publish_url": "https://mp.weixin.qq.com", "sort_order": 2},
@@ -22,8 +33,8 @@ PLANS = [
 ]
 
 
-def score_of(authority, difficulty):
-    return round(0.6 * authority + 0.4 * difficulty, 2)
+def score_of(authority, difficulty, ai_cite_weight):
+    return round(0.4 * authority + 0.2 * difficulty + 0.4 * ai_cite_weight, 1)
 
 
 def seed():
@@ -31,8 +42,11 @@ def seed():
     db = SessionLocal()
     try:
         for p in PLATFORMS:
-            if not db.query(Platform).filter(Platform.key == p["key"]).first():
-                db.add(Platform(**p, score=score_of(p["authority"], p["difficulty"])))
+            key = p["key"]
+            weight = WEIGHTS.get(key, 0)
+            payload = {**p, "ai_cite_weight": weight, "score": score_of(p["authority"], p["difficulty"], weight)}
+            if not db.query(Platform).filter(Platform.key == key).first():
+                db.add(Platform(**payload))
         for plan in PLANS:
             if not db.query(Plan).filter(Plan.key == plan["key"]).first():
                 data = dict(plan)

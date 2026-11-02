@@ -104,6 +104,52 @@ def ensure_business_columns():
 
 
 ensure_business_columns()
+def ensure_feeding_asset_columns():
+    columns = {column["name"] for column in inspect(engine).get_columns("feeding_assets")}
+    with engine.begin() as connection:
+        if "citability" not in columns:
+            connection.exec_driver_sql("ALTER TABLE feeding_assets ADD COLUMN citability TEXT")
+        if "fingerprints" not in columns:
+            connection.exec_driver_sql("ALTER TABLE feeding_assets ADD COLUMN fingerprints TEXT")
+
+
+def ensure_platform_columns():
+    columns = {column["name"] for column in inspect(engine).get_columns("platforms")}
+    if "ai_cite_weight" not in columns:
+        with engine.begin() as connection:
+            connection.exec_driver_sql(
+                "ALTER TABLE platforms ADD COLUMN ai_cite_weight FLOAT DEFAULT 0"
+            )
+
+
+def sync_platform_cite_weights():
+    weights = {
+        "government": 9.5,
+        "tourism_bureau": 8.5,
+        "official_site": 7.5,
+        "zhihu": 7.0,
+        "baidu": 6.5,
+        "wechat": 5.0,
+        "rednote": 4.0,
+        "wechat_personal": 1.0,
+    }
+    with SessionLocal() as db:
+        for p in db.query(Platform).all():
+            w = weights.get(p.key)
+            if w is None:
+                continue
+            p.ai_cite_weight = w
+            p.score = round(
+                0.4 * (p.authority or 0) + 0.2 * (p.difficulty or 0) + 0.4 * w,
+                1,
+            )
+        db.commit()
+
+
+ensure_feeding_asset_columns()
+ensure_platform_columns()
+sync_platform_cite_weights()
+
 ensure_monitor_run_columns()
 ensure_monitor_result_columns()
 
@@ -305,6 +351,8 @@ def feeding_plan_data(plan, include_content=False):
                     }
                     for image in asset.images
                 ],
+                "citability": json.loads(asset.citability) if asset.citability else None,
+                "fingerprints": json.loads(asset.fingerprints) if asset.fingerprints else [],
                 **({"content": asset.content} if include_content else {}),
             }
             for asset in plan.assets
@@ -362,6 +410,10 @@ DOMAIN_TO_PLATFORM = {
 DOMAIN_SUFFIX_TO_PLATFORM = [
     (".gov.cn", "government"),
 ]
+PLATFORM_KEYS = {
+    "wechat_personal", "wechat", "official_site", "rednote",
+    "zhihu", "baidu", "tourism_bureau", "government", "google",
+}
 
 def domain_to_platform(domain, business_website=None):
     """域名 → 平台 key，匹配不到返回 "other"（其他信源）"""
@@ -370,6 +422,8 @@ def domain_to_platform(domain, business_website=None):
     d = domain.strip().lower()
     if d in DOMAIN_TO_PLATFORM:
         return DOMAIN_TO_PLATFORM[d]
+    if d in PLATFORM_KEYS:
+        return d
     for suffix, key in DOMAIN_SUFFIX_TO_PLATFORM:
         if d.endswith(suffix):
             return key
@@ -526,6 +580,7 @@ def list_platforms():
                 "key": p.key, "label": p.label,
                 "authority": p.authority, "difficulty": p.difficulty,
                 "score": p.score, "publish_url": p.publish_url,
+                "ai_cite_weight": p.ai_cite_weight,
             }
             for p in platforms
         ]
@@ -1036,7 +1091,13 @@ def business_platforms(business_id: int):
             "plan_key": business.plan_key,
             "plan_label": plan.label if plan else "未知套餐",
             "platforms": [
-                {"key": p.key, "label": p.label, "score": p.score, "publish_url": p.publish_url}
+                {
+                    "key": p.key,
+                    "label": p.label,
+                    "score": p.score,
+                    "publish_url": p.publish_url,
+                    "ai_cite_weight": p.ai_cite_weight,
+                }
                 for p in platforms
             ],
         }
@@ -1287,7 +1348,10 @@ def create_feeding_plan(request: FeedingPlanInput):
                 channel=asset["channel"],
                 title=asset["title"],
                 content=asset["content"],
-            ))
+                citability=json.dumps(asset["citability"], ensure_ascii=False) if asset.get("citability") else None,
+                fingerprints=json.dumps(asset.get("fingerprints") or [], ensure_ascii=False),
+         ))
+
         db.commit()
         db.refresh(plan)
         return feeding_plan_data(plan, include_content=True)
@@ -1538,6 +1602,42 @@ def mark_feeding_asset_published(asset_id: int, request: FeedingPublishInput):
     finally:
         db.close()
 
+@app.post("/api/feeding-assets/{asset_id}/regenerate")
+def regenerate_asset(asset_id: int, payload: dict):
+    provider_id = payload.get("provider", "deepseek")
+    db = SessionLocal()
+    try:
+        asset = db.get(FeedingAsset, asset_id)
+        if asset is None:
+            raise HTTPException(status_code=404, detail="素材不存在")
+        plan = db.get(FeedingPlan, asset.plan_id)
+        if plan is None:
+            raise HTTPException(status_code=404, detail="计划不存在")
+        business = db.get(Business, plan.business_id)
+        brief = json.loads(plan.brief or "{}")
+        try:
+            new_assets = build_assets(business, [asset.channel], brief, provider_id)
+        except (ValueError, RuntimeError) as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+        if new_assets:
+            na = new_assets[0]
+            asset.title = na["title"]
+            asset.content = na["content"]
+            if na.get("citability"):
+                asset.citability = json.dumps(na["citability"], ensure_ascii=False)
+            if "fingerprints" in na:
+                asset.fingerprints = json.dumps(na.get("fingerprints") or [], ensure_ascii=False)
+        db.commit()
+        db.refresh(asset)
+        return {
+            "id": asset.id,
+            "title": asset.title,
+            "content": asset.content,
+            "citability": json.loads(asset.citability) if asset.citability else None,
+            "fingerprints": json.loads(asset.fingerprints) if asset.fingerprints else [],
+        }
+    finally:
+        db.close()
 
 @app.post("/api/feeding-assets/{asset_id}/review")
 def review_feeding_asset(asset_id: int):

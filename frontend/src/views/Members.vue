@@ -81,23 +81,28 @@
 
       <h2 style="margin-top:24px">平台评分</h2>
       <table class="table">
-        <thead><tr><th>平台</th><th>权威度</th><th>发布难度</th><th>综合分</th></tr></thead>
+        <thead><tr><th>平台</th><th>权威度</th><th>发布难度</th><th>AI 引用权重</th><th>综合分</th></tr></thead>
         <tbody>
-          <tr v-for="p in platforms" :key="p.key">
-            <td>{{ p.label }}</td>
+          <tr v-for="p in sortedPlatforms" :key="p.key" :class="{ 'priority-row': (p.ai_cite_weight ?? 0) >= 7 }">
+            <td>
+              <span class="platform-name">{{ p.label }}</span>
+              <span v-if="(p.ai_cite_weight ?? 0) >= 7" class="tag primary">优先投</span>
+            </td>
             <td>{{ p.authority }}</td>
             <td>{{ p.difficulty }}</td>
+            <td>{{ p.ai_cite_weight ?? 0 }}</td>
             <td><b>{{ p.score }}</b></td>
           </tr>
         </tbody>
       </table>
-      <p class="muted">综合分 = 权威度 × 0.6 + 发布难度 × 0.4</p>
+      <p class="muted">综合分 = 0.4 × 权威度 + 0.2 × 发布难度 + 0.4 × AI 引用权重</p>
+      <p class="muted">建议优先投：政府平台、文旅局、企业官网，AI 更易引用。</p>
     </section>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import api, { getBusinesses } from '../api'
 
 const tab = ref('businesses')
@@ -109,6 +114,9 @@ const showForm = ref(false)
 const editingId = ref(null)
 
 const form = ref({})
+const sortedPlatforms = computed(() => {
+  return [...platforms.value].sort((a, b) => (b.ai_cite_weight ?? 0) - (a.ai_cite_weight ?? 0))
+})
 
 function emptyForm() {
   return { name: '', region: '', category: '', alias: '', plan_key: 'trial',

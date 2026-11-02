@@ -1,10 +1,11 @@
+import json
 import time
 import re
 from urllib.parse import urlparse
 from openai import OpenAI
 from app.config import DEEPSEEK_KEY, DEEPSEEK_BASE, DEEPSEEK_MODEL, KIMI_KEY, KIMI_BASE, KIMI_MODEL
 from app.database import SessionLocal
-from app.models import Business, MonitorRun, MonitorResult, Question, QuestionSet, Citation
+from app.models import Business, Citation, FeedingAsset, FeedingPlan, MonitorRun, MonitorResult, Question, QuestionSet
 
 SLEEP_BETWEEN = 20
 
@@ -61,6 +62,57 @@ def list_providers():
         {"id": pid, "label": cfg["label"], "configured": bool(cfg["key"])}
         for pid, cfg in PROVIDERS.items()
     ]
+
+
+def match_fingerprints(db, business_id, result, answer_text):
+    """根据投喂素材的指纹识别 AI 回答命中了哪条内容，写入 Citation。"""
+    if not answer_text:
+        return
+
+    assets = (
+        db.query(FeedingAsset)
+        .join(FeedingPlan, FeedingAsset.plan_id == FeedingPlan.id)
+        .filter(FeedingPlan.business_id == business_id)
+        .all()
+    )
+    answer = (answer_text or "").lower()
+    seen_asset_keys = set()
+
+    for asset in assets:
+        if not asset.fingerprints:
+            continue
+        try:
+            fps = json.loads(asset.fingerprints)
+        except Exception:
+            continue
+        if not isinstance(fps, list):
+            continue
+
+        positions = []
+        for fp in fps:
+            if not fp or not isinstance(fp, str):
+                continue
+            target = fp.strip()
+            if not target:
+                continue
+            pos = answer.find(target.lower())
+            if pos >= 0:
+                positions.append(pos)
+
+        if not positions:
+            continue
+
+        asset_key = (asset.id, asset.published_url or asset.channel)
+        if asset_key in seen_asset_keys:
+            continue
+        seen_asset_keys.add(asset_key)
+
+        db.add(Citation(
+            result_id=result.id,
+            source_url=asset.published_url or asset.channel,
+            source_domain=asset.channel,
+            position=min(positions),
+        ))
 
 
 def questions_for_business(db, business):
@@ -226,6 +278,7 @@ def run_monitor(run_id):
                     position=cite["position"],
                 ))
 
+            match_fingerprints(db, run.business_id, result, answer)
             db.commit()
             time.sleep(SLEEP_BETWEEN)
 
