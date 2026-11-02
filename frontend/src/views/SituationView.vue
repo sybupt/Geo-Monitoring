@@ -92,24 +92,22 @@ function displayTime(v) { return v ? v.replace('T', ' ').slice(0, 16) : '—' }
 function renderTrend() {
   if (!trendChart) return
   const trend = data.value.mention_trend || []
-  const labels = trend.map((t, i) => `#${t.run_id}`)
-  const providers = [...new Set(trend.map(t => t.provider_name))]
-  const colors = ['#116b55', '#4f46e5', '#b45309', '#7c3aed', '#0e7490']
+  const labels = trend.map(t => t.label || t.question_set_id || `#${t.run_id || 'n'}`)
   trendChart.setOption({
     tooltip: { trigger: 'axis' },
-    legend: { data: providers, top: 0 },
+    legend: { data: ['提及率'], top: 0 },
     grid: { left: 40, right: 20, top: 40, bottom: 30 },
     xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 10 } },
     yAxis: { type: 'value', max: 100, axisLabel: { formatter: '{value}%' } },
-    series: providers.map((p, i) => ({
-      name: p,
+    series: [{
+      name: '提及率',
       type: 'line',
       smooth: true,
       connectNulls: true,
       lineStyle: { width: 2 },
-      itemStyle: { color: colors[i % colors.length] },
-      data: trend.map(t => (t.provider_name === p ? t.mention_rate : null)),
-    })),
+      itemStyle: { color: '#116b55' },
+      data: trend.map(t => Number(t.mention_rate ?? 0)),
+    }],
   })
 }
 

@@ -915,11 +915,38 @@ def situation_overview(business_id: int | None = None):
             .filter(*run_filter).scalar() or 0
         )
 
+        question_sets = {
+            qs.id: qs for qs in (
+                db.query(QuestionSet)
+                .filter(QuestionSet.business_id == business_id)
+                .all()
+            )
+        } if business_id is not None else {}
+
         mention_trend = []
+        latest_by_question_set = {}
         for run in done_runs:
+            if run.question_set_id is None:
+                key = f"run:{run.id}"
+                latest_by_question_set[key] = run
+                continue
+            key = f"question_set:{run.question_set_id}"
+            current = latest_by_question_set.get(key)
+            if current is None or (run.created_at and current.created_at and run.created_at > current.created_at):
+                latest_by_question_set[key] = run
+
+        for _, run in sorted(
+            latest_by_question_set.items(),
+            key=lambda item: (item[1].created_at or datetime.min, item[1].id),
+        ):
             m = run_metrics(db, run)
+            question_set_id = run.question_set_id
+            question_set = question_sets.get(question_set_id) if question_set_id is not None else None
+            label = f"问题集 #{question_set.version}" if question_set else (f"监测 #{run.id}" if run.id else "最新")
             mention_trend.append({
                 "run_id": run.id,
+                "question_set_id": question_set_id,
+                "label": label,
                 "time": run.created_at.isoformat() if run.created_at else None,
                 "engine": run.engine,
                 "provider_name": m["provider_name"],
