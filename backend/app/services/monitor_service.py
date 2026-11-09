@@ -308,3 +308,4 @@ def _questions_for_run(db, run, business):
     if active:
         return [{"text": i.text, "question_id": None, "item_id": i.id} for i in active.items]
     return [{"text": q.text, "question_id": q.id, "item_id": None} for q in db.query(Question).all()]
+
