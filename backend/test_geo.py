@@ -1,7 +1,7 @@
 from app.database import SessionLocal, Base, engine
 from app.models import Business, Question
 from app.services.monitor_service import ask_text
-from app.services import reverse_diagnosis, coverage, feeding_service
+from app.services import coverage_service, feeding_service, reverse_diagnosis_service
 
 Base.metadata.create_all(bind=engine)
 db = SessionLocal()
@@ -21,7 +21,7 @@ print(answer[:400])
 print(">>> 是否提到我:", biz.alias in answer)
 
 # 3) 逆向诊断：为什么没提我
-d = reverse_diagnosis.diagnose_question(
+d = reverse_diagnosis_service.diagnose_question(
     q, biz.alias, competitors=["其他口腔", "某连锁口腔"],
     model_name="kimi_search",
     geo_keywords=["清镇"],
@@ -31,7 +31,7 @@ print("② 逆向诊断")
 print("缺失原因:", d.missing_reason, "| 当前答案提到:", d.current_mentioned)
 
 # 4) 覆盖度预演：我的内容够不够
-c = coverage.check_coverage(q, biz.alias, ["口腔", "诊所", "清镇"])
+c = coverage_service.check_coverage(q, biz.alias, ["口腔", "诊所", "清镇"])
 print("=" * 40)
 print("③ 覆盖度预演")
 print("覆盖分:", c.coverage_score, "| 缺口:", c.gap_note)

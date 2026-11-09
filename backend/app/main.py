@@ -34,7 +34,7 @@ from app.services.monitor_service import (
 from app.services.feeding_service import CHANNEL_LABELS, build_assets
 from app.services.question_service import generate_questions
 
-from app.services import reverse_diagnosis, coverage, feeding_service
+from app.services import coverage_service, feeding_service, reverse_diagnosis_service
 
 Base.metadata.create_all(bind=engine)
 IMAGE_DIR = Path(__file__).resolve().parents[1] / "data" / "feeding_images"
@@ -2344,7 +2344,7 @@ def run_reverse_diagnosis(question_id: int, brand: str, competitors: str,
     q = db.query(Question).get(question_id)
     comps = [c.strip() for c in competitors.split(",") if c.strip()]
     geo_kw = [g.strip() for g in geo.split(",") if g.strip()] or None
-    d = reverse_diagnosis.diagnose_question(q, brand, comps, model, geo_kw)
+    d = reverse_diagnosis_service.diagnose_question(q, brand, comps, model, geo_kw)
     db.add(d); db.commit(); db.refresh(d); db.close()
     return {"id": d.id, "missing_reason": d.missing_reason,
             "current_mentioned": d.current_mentioned}
@@ -2357,7 +2357,7 @@ def run_coverage(question_id: int, brand: str, category_words: str):
     db = SessionLocal()
     q = db.query(Question).get(question_id)
     cw = [w.strip() for w in category_words.split(",") if w.strip()]
-    c = coverage.check_coverage(q, brand, cw)
+    c = coverage_service.check_coverage(q, brand, cw)
     db.add(c); db.commit(); db.refresh(c); db.close()
     return {"coverage_score": c.coverage_score, "gap_note": c.gap_note}
 
