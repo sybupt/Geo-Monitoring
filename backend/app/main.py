@@ -34,6 +34,7 @@ from app.services.monitor_service import (
 from app.services.feeding_service import CHANNEL_LABELS, build_assets
 from app.services.question_service import generate_questions
 
+from app.services import reverse_diagnosis, coverage, feeding_service
 
 Base.metadata.create_all(bind=engine)
 IMAGE_DIR = Path(__file__).resolve().parents[1] / "data" / "feeding_images"
@@ -111,6 +112,10 @@ def ensure_feeding_asset_columns():
             connection.exec_driver_sql("ALTER TABLE feeding_assets ADD COLUMN citability TEXT")
         if "fingerprints" not in columns:
             connection.exec_driver_sql("ALTER TABLE feeding_assets ADD COLUMN fingerprints TEXT")
+        if "question_id" not in columns:
+            connection.exec_driver_sql("ALTER TABLE feeding_assets ADD COLUMN question_id INTEGER")
+        if "consistency_score" not in columns:
+            connection.exec_driver_sql("ALTER TABLE feeding_assets ADD COLUMN consistency_score FLOAT")
 
 
 def ensure_platform_columns():
@@ -208,6 +213,7 @@ class FeedingPlanInput(BaseModel):
     business_id: int = Field(gt=0)
     name: str = Field(min_length=1, max_length=200)
     provider: Literal["kimi_search", "deepseek"]
+    question_id: int | None = Field(default=None, gt=0)
     channels: list[
         Literal[
             "rednote",
@@ -355,6 +361,18 @@ def feeding_plan_data(plan, include_content=False):
                 ],
                 "citability": json.loads(asset.citability) if asset.citability else None,
                 "fingerprints": json.loads(asset.fingerprints) if asset.fingerprints else [],
+                "question_id": asset.question_id,
+                "consistency_score": asset.consistency_score,
+                "consistency_details": (
+                    feeding_service.consistency_report(
+                        f"{asset.title}\n{asset.content}",
+                        asset.question.standard_answer.answer_text,
+                    )
+                    if asset.consistency_score is not None
+                    and asset.question
+                    and asset.question.standard_answer
+                    else None
+                ),
                 **({"content": asset.content} if include_content else {}),
             }
             for asset in plan.assets
@@ -1359,6 +1377,14 @@ def create_feeding_plan(request: FeedingPlanInput):
         business = db.get(Business, request.business_id)
         if business is None:
             raise HTTPException(status_code=404, detail="企业不存在")
+        standard_answer = None
+        if request.question_id is not None:
+            question = db.get(Question, request.question_id)
+            if question is None:
+                raise HTTPException(status_code=404, detail="目标问题不存在")
+            standard_answer = question.standard_answer
+            if standard_answer is None or not standard_answer.answer_text.strip():
+                raise HTTPException(status_code=400, detail="请先为目标问题保存标准答案句")
         channels = list(dict.fromkeys(request.channels))
         plan_obj = db.query(Plan).filter(Plan.key == business.plan_key).first()
         allowed_keys = json.loads(plan_obj.platform_keys or "[]") if plan_obj else []
@@ -1370,7 +1396,13 @@ def create_feeding_plan(request: FeedingPlanInput):
             )
 
         try:
-            assets = build_assets(business, channels, brief, request.provider)
+            assets = build_assets(
+                business,
+                channels,
+                brief,
+                request.provider,
+                standard_answer.answer_text if standard_answer else "",
+            )
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         except RuntimeError as exc:
@@ -1389,6 +1421,7 @@ def create_feeding_plan(request: FeedingPlanInput):
                 channel=asset["channel"],
                 title=asset["title"],
                 content=asset["content"],
+                question_id=request.question_id,
                 citability=json.dumps(asset["citability"], ensure_ascii=False) if asset.get("citability") else None,
                 fingerprints=json.dumps(asset.get("fingerprints") or [], ensure_ascii=False),
          ))
@@ -1423,6 +1456,61 @@ def list_feeding_plans(business_id: int):
         db.close()
 
 
+@app.post("/api/feeding-plans/{plan_id}/consistency-check")
+def check_feeding_plan_consistency(plan_id: int, question_id: int):
+    db = SessionLocal()
+    try:
+        plan = db.get(FeedingPlan, plan_id)
+        if plan is None:
+            raise HTTPException(status_code=404, detail="投喂计划不存在")
+        question = db.get(Question, question_id)
+        if question is None:
+            raise HTTPException(status_code=404, detail="目标问题不存在")
+        standard_answer = question.standard_answer
+        if standard_answer is None or not standard_answer.answer_text.strip():
+            raise HTTPException(status_code=400, detail="请先为目标问题保存标准答案句")
+        if not plan.assets:
+            raise HTTPException(status_code=400, detail="该计划没有可校验的素材")
+
+        results = []
+        for asset in plan.assets:
+            report = feeding_service.consistency_report(
+                f"{asset.title or ''}\n{asset.content or ''}",
+                standard_answer.answer_text,
+            )
+            asset.question_id = question.id
+            asset.consistency_score = report["score"]
+            if (
+                asset.status == "reviewed"
+                and report["score"] < feeding_service.CONSISTENCY_PASS_SCORE
+            ):
+                asset.status = "draft"
+            results.append({
+                "asset_id": asset.id,
+                "channel": asset.channel,
+                "channel_name": CHANNEL_LABELS.get(asset.channel, asset.channel),
+                **report,
+                "passed": report["score"] >= feeding_service.CONSISTENCY_PASS_SCORE,
+            })
+
+        db.commit()
+        return {
+            "plan_id": plan.id,
+            "question_id": question.id,
+            "pass_score": feeding_service.CONSISTENCY_PASS_SCORE,
+            "passed": all(item["passed"] for item in results),
+            "results": results,
+        }
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
 @app.put("/api/feeding-assets/{asset_id}")
 def update_feeding_asset(asset_id: int, request: FeedingAssetUpdate):
     title = request.title.strip()
@@ -1439,6 +1527,7 @@ def update_feeding_asset(asset_id: int, request: FeedingAssetUpdate):
         asset.title = title
         asset.content = content
         asset.status = "draft"
+        asset.consistency_score = None
         db.commit()
         return {"id": asset.id, "title": asset.title, "status": asset.status}
     except HTTPException:
@@ -1651,13 +1740,23 @@ def regenerate_asset(asset_id: int, payload: dict):
         asset = db.get(FeedingAsset, asset_id)
         if asset is None:
             raise HTTPException(status_code=404, detail="素材不存在")
+        if asset.status == "published":
+            raise HTTPException(status_code=409, detail="已发布素材不可重新生成")
         plan = db.get(FeedingPlan, asset.plan_id)
         if plan is None:
             raise HTTPException(status_code=404, detail="计划不存在")
         business = db.get(Business, plan.business_id)
         brief = json.loads(plan.brief or "{}")
+        question = db.get(Question, asset.question_id) if asset.question_id else None
+        standard_answer = question.standard_answer if question else None
         try:
-            new_assets = build_assets(business, [asset.channel], brief, provider_id)
+            new_assets = build_assets(
+                business,
+                [asset.channel],
+                brief,
+                provider_id,
+                standard_answer.answer_text if standard_answer else "",
+            )
         except (ValueError, RuntimeError) as exc:
             raise HTTPException(status_code=502, detail=str(exc)) from exc
         if new_assets:
@@ -1668,6 +1767,8 @@ def regenerate_asset(asset_id: int, payload: dict):
                 asset.citability = json.dumps(na["citability"], ensure_ascii=False)
             if "fingerprints" in na:
                 asset.fingerprints = json.dumps(na.get("fingerprints") or [], ensure_ascii=False)
+            asset.consistency_score = None
+            asset.status = "draft"
         db.commit()
         db.refresh(asset)
         return {
@@ -1689,6 +1790,16 @@ def review_feeding_asset(asset_id: int):
             raise HTTPException(status_code=404, detail="投放素材不存在")
         if asset.status != "draft":
             raise HTTPException(status_code=409, detail="只有待审核素材可以执行审核")
+        if asset.consistency_score is None:
+            raise HTTPException(status_code=409, detail="请先完成多源一致性校验")
+        if asset.consistency_score < feeding_service.CONSISTENCY_PASS_SCORE:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"一致性得分未达标（当前 {round(asset.consistency_score * 100)} 分，"
+                    f"需达到 {round(feeding_service.CONSISTENCY_PASS_SCORE * 100)} 分）"
+                ),
+            )
         asset.status = "reviewed"
         db.commit()
         return {"id": asset.id, "status": asset.status}
@@ -2222,3 +2333,40 @@ def effect_overview(business_id: int, question_set_id: int):
         }
     finally:
         db.close()
+
+# ── 逆向诊断 ──
+@app.post("/api/diagnosis/reverse/{question_id}")
+def run_reverse_diagnosis(question_id: int, brand: str, competitors: str,
+                          model: str = "kimi_search", geo: str = ""):
+    from .models import Question
+    from .database import SessionLocal
+    db = SessionLocal()
+    q = db.query(Question).get(question_id)
+    comps = [c.strip() for c in competitors.split(",") if c.strip()]
+    geo_kw = [g.strip() for g in geo.split(",") if g.strip()] or None
+    d = reverse_diagnosis.diagnose_question(q, brand, comps, model, geo_kw)
+    db.add(d); db.commit(); db.refresh(d); db.close()
+    return {"id": d.id, "missing_reason": d.missing_reason,
+            "current_mentioned": d.current_mentioned}
+
+# ── 覆盖度预演 ──
+@app.post("/api/coverage/check/{question_id}")
+def run_coverage(question_id: int, brand: str, category_words: str):
+    from .models import Question
+    from .database import SessionLocal
+    db = SessionLocal()
+    q = db.query(Question).get(question_id)
+    cw = [w.strip() for w in category_words.split(",") if w.strip()]
+    c = coverage.check_coverage(q, brand, cw)
+    db.add(c); db.commit(); db.refresh(c); db.close()
+    return {"coverage_score": c.coverage_score, "gap_note": c.gap_note}
+
+# ── 标准答案句 ──
+@app.post("/api/feeding/standard_answer")
+def save_standard_answer(question_id: int, brand: str, answer_text: str):
+    feeding_service.set_standard_answer(question_id, brand, answer_text)
+    return {"ok": True}
+# ── 投喂清单 ──
+@app.get("/api/feeding/plan/{question_id}")
+def get_feed_plan(question_id: int):
+    return feeding_service.feed_plan(question_id)

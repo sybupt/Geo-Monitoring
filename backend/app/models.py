@@ -30,6 +30,11 @@ class Question(Base):
     text = Column(Text)
     category = Column(String)
     region = Column(String)
+    # ↓ 新增：关联诊断/覆盖/标准答案句/投喂内容
+    diagnoses = relationship("ReverseDiagnosis", backref="question")
+    coverage_checks = relationship("CoverageCheck", backref="question")
+    standard_answer = relationship("StandardAnswer", backref="question", uselist=False)
+    feeds = relationship("FeedingAsset", backref="question")
 
 
 class QuestionSet(Base):
@@ -104,6 +109,10 @@ class FeedingAsset(Base):
     __tablename__ = "feeding_assets"
     id = Column(Integer, primary_key=True)
     plan_id = Column(Integer, ForeignKey("feeding_plans.id"))
+    # ↓ 新增：内容挂到问题 + 一致性打分
+    question_id = Column(Integer, ForeignKey("questions.id"), nullable=True)
+    consistency_score = Column(Float, nullable=True)
+    # ↓ 原有字段
     channel = Column(String)
     title = Column(String)
     content = Column(Text)
@@ -160,3 +169,37 @@ class Plan(Base):
     platform_keys = Column(Text)
     description = Column(String)
     sort_order = Column(Integer, default=0)
+
+
+# ══════════════ 以下为新增三张表 ══════════════
+
+class ReverseDiagnosis(Base):
+    __tablename__ = "reverse_diagnosis"
+    id = Column(Integer, primary_key=True)
+    question_id = Column(Integer, ForeignKey("questions.id"))
+    model_name = Column(String)
+    brand_name = Column(String)
+    current_mentioned = Column(Text)      # 当前答案里提到了谁
+    missing_reason = Column(String)       # 信源缺失/权重不足/地域标签错乱/竞品挤压
+    raw_answer = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class CoverageCheck(Base):
+    __tablename__ = "coverage_checks"
+    id = Column(Integer, primary_key=True)
+    question_id = Column(Integer, ForeignKey("questions.id"))
+    coverage_score = Column(Float)        # 0~1
+    matched_keywords = Column(Text)
+    gap_keywords = Column(Text)
+    gap_note = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class StandardAnswer(Base):
+    __tablename__ = "standard_answers"
+    id = Column(Integer, primary_key=True)
+    question_id = Column(Integer, ForeignKey("questions.id"), unique=True)
+    brand_name = Column(String)
+    answer_text = Column(Text)            # 标准答案句：定义+数据+结论
+    created_at = Column(DateTime, default=datetime.utcnow)

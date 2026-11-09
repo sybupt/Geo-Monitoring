@@ -1,3 +1,5 @@
+import re
+
 from app.services.monitor_service import PROVIDERS, ask_text
 
 CHANNEL_LABELS = {
@@ -24,8 +26,10 @@ CHANNEL_HINTS = {
     "wechat": "微信公众号推文风格：标题吸引、排版友好、有号召力",
 }
 
+CONSISTENCY_PASS_SCORE = 0.8
 
-def build_assets(business, channels, brief, provider_id):
+
+def build_assets(business, channels, brief, provider_id, standard_answer=""):
     if provider_id not in PROVIDERS:
         raise ValueError(f"未知模型：{provider_id}")
     if not PROVIDERS[provider_id]["key"]:
@@ -59,6 +63,8 @@ def build_assets(business, channels, brief, provider_id):
         event_parts.append(f"描述：{event_desc}")
     if event_parts:
         facts.append("事件：" + "；".join(event_parts))
+    if standard_answer:
+        facts.append(f"标准答案参考（需保留其中的品牌、定义和数据口径，可按渠道改写表达）：{standard_answer}")
     core_facts = "\n".join(facts)
 
     assets = []
@@ -161,3 +167,99 @@ def _parse_json(raw):
         if match:
             return json.loads(match.group(0))
         return {}
+
+# ══════════════ 多源一致投喂（修正版） ══════════════
+
+def set_standard_answer(question_id: int, brand: str, answer_text: str):
+    from app.models import FeedingAsset, StandardAnswer
+    from app.database import SessionLocal
+    db = SessionLocal()
+    sa = db.query(StandardAnswer).filter_by(question_id=question_id).first()
+    if not sa:
+        sa = StandardAnswer(question_id=question_id, brand_name=brand)
+        db.add(sa)
+    answer_changed = sa.answer_text != answer_text
+    sa.brand_name = brand
+    sa.answer_text = answer_text
+    if answer_changed:
+        assets = db.query(FeedingAsset).filter_by(question_id=question_id).all()
+        for asset in assets:
+            asset.consistency_score = None
+            if asset.status == "reviewed":
+                asset.status = "draft"
+    db.commit()
+    db.close()
+
+
+def consistency_score(feed_content: str, standard_answer: str) -> float:
+    return consistency_report(feed_content, standard_answer)["score"]
+
+
+def _consistency_terms(text: str) -> set[str]:
+    try:
+        import jieba
+        terms = jieba.lcut(text)
+    except ImportError:
+        terms = []
+        for token in re.findall(r"[\u4e00-\u9fff]+|[A-Za-z0-9]+", text):
+            if re.fullmatch(r"[\u4e00-\u9fff]+", token):
+                terms.extend(token[index:index + 2] for index in range(len(token) - 1))
+                if len(token) == 1:
+                    terms.append(token)
+            else:
+                terms.append(token.lower())
+    return {
+        term.strip().lower()
+        for term in terms
+        if term.strip() and re.search(r"[\u4e00-\u9fffA-Za-z0-9]", term)
+    }
+
+
+def consistency_report(feed_content: str, standard_answer: str) -> dict:
+    """Compare required terms in the standard answer with a platform asset."""
+    expected = _consistency_terms(standard_answer)
+    actual = _consistency_terms(feed_content)
+    matched = sorted(expected & actual)
+    missing = sorted(expected - actual)
+    score = round(len(matched) / len(expected), 2) if expected else 0.0
+    return {
+        "score": score,
+        "matched_terms": matched,
+        "missing_terms": missing,
+    }
+
+
+def _top_platforms(limit: int = 5):
+    """按 ai_cite_weight 取高权重平台（读 Platform 表，不硬编码）。"""
+    from app.models import Platform
+    from app.database import SessionLocal
+    db = SessionLocal()
+    ps = (
+        db.query(Platform)
+        .order_by(Platform.ai_cite_weight.desc(), Platform.authority.desc())
+        .limit(limit)
+        .all()
+    )
+    db.close()
+    return [
+        {"key": p.key, "label": p.label, "weight": p.ai_cite_weight or 0}
+        for p in ps
+    ]
+
+
+def feed_plan(question_id: int) -> dict:
+    from app.models import Question
+    from app.database import SessionLocal
+    db = SessionLocal()
+    q = db.query(Question).get(question_id)
+    sa = q.standard_answer
+    db.close()
+    if not sa:
+        return {"error": "尚未设置标准答案句"}
+    return {
+        "question": q.text,
+        "brand": sa.brand_name,
+        "standard_answer": sa.answer_text,
+        "target_platforms": _top_platforms(5),
+        "consistency_note": "各平台改写需保持品牌名/定义/数据口径一致",
+    }

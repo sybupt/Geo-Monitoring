@@ -23,6 +23,93 @@
       </div>
     </div>
 
+    <!-- 问题诊断与覆盖预演 -->
+    <section class="card">
+      <h2>问题诊断与覆盖预演</h2>
+      <p class="muted">选择问题并填写品牌信息，可查看模型当前提及情况、内容覆盖缺口，以及建议投喂的平台。</p>
+      <div v-if="!questions.length" class="muted">暂无问题，请先到「问题工厂」创建问题。</div>
+      <template v-else>
+        <div class="form-row">
+          <label>目标问题</label>
+          <select v-model.number="selectedQuestionId" class="input" @change="resetQuestionResults">
+            <option v-for="question in questions" :key="question.id" :value="question.id">
+              {{ question.text }}
+            </option>
+          </select>
+        </div>
+        <div class="form-grid feature-form">
+          <div class="form-row">
+            <label>品牌名称</label>
+            <input v-model="featureBrand" class="input" placeholder="企业或品牌名称" />
+          </div>
+          <div class="form-row">
+            <label>竞品名称</label>
+            <input v-model="competitorNames" class="input" placeholder="多个名称用逗号分隔" />
+          </div>
+          <div class="form-row">
+            <label>地域关键词</label>
+            <input v-model="geoKeywords" class="input" placeholder="多个词用逗号分隔，如湖北恩施、恩施" />
+          </div>
+          <div class="form-row">
+            <label>品类关键词</label>
+            <input v-model="categoryKeywords" class="input" placeholder="多个词用逗号分隔，如民宿、亲子游" />
+          </div>
+          <div class="form-row">
+            <label>标准答案句</label>
+            <textarea v-model="standardAnswer" rows="3" class="textarea" placeholder="填写真实、可核验的品牌介绍或答案要点"></textarea>
+          </div>
+          <div class="form-row">
+            <label>诊断模型</label>
+            <select v-model="diagnosisProvider" class="input">
+              <option v-for="provider in configuredProviders" :key="provider.id" :value="provider.id">
+                {{ provider.label }}
+              </option>
+            </select>
+          </div>
+        </div>
+        <div class="feature-actions">
+          <button class="btn" :disabled="savingStandardAnswer" @click="saveFeatureStandardAnswer">
+            {{ savingStandardAnswer ? '保存中…' : '保存标准答案' }}
+          </button>
+          <button class="btn primary" :disabled="checkingCoverage" @click="runCoverageCheck">
+            {{ checkingCoverage ? '预演中…' : '覆盖度预演' }}
+          </button>
+          <button class="btn primary" :disabled="runningDiagnosis || !configuredProviders.length" @click="runReverseDiagnosis">
+            {{ runningDiagnosis ? '诊断中…' : '逆向诊断' }}
+          </button>
+          <button class="btn" :disabled="loadingFeedPlan" @click="loadMultiSourcePlan">
+            {{ loadingFeedPlan ? '读取中…' : '多源一致投喂清单' }}
+          </button>
+        </div>
+        <p v-if="featureError" class="error">{{ featureError }}</p>
+        <p v-if="featureSuccess" class="feature-success">{{ featureSuccess }}</p>
+
+        <div v-if="coverageResult || diagnosisResult || multiSourcePlan" class="feature-results">
+          <article v-if="coverageResult" class="feature-result">
+            <h3>覆盖度预演</h3>
+            <p class="feature-score">{{ Math.round(coverageResult.coverage_score * 100) }}%</p>
+            <p>{{ coverageResult.gap_note }}</p>
+          </article>
+          <article v-if="diagnosisResult" class="feature-result">
+            <h3>逆向诊断</h3>
+            <p><b>当前提及：</b>{{ diagnosisResult.current_mentioned }}</p>
+            <p><b>可能原因：</b>{{ diagnosisResult.missing_reason }}</p>
+          </article>
+          <article v-if="multiSourcePlan" class="feature-result feature-result-wide">
+            <h3>多源一致投喂清单</h3>
+            <p><b>标准答案：</b>{{ multiSourcePlan.standard_answer }}</p>
+            <p><b>一致性要求：</b>{{ multiSourcePlan.consistency_note }}</p>
+            <div class="platform-list">
+              <span v-for="platform in multiSourcePlan.target_platforms" :key="platform.key" class="channel-tag">
+                {{ platform.label }} · 权重 {{ platform.weight }}
+              </span>
+            </div>
+            <p class="muted">创建计划时会把标准答案作为生成参考；生成后可在计划卡片执行一致性校验，达标素材才能审核发布。</p>
+          </article>
+        </div>
+      </template>
+    </section>
+
     <!-- 创建投喂计划 -->
     <section class="card">
       <h2>创建投喂计划</h2>
@@ -133,6 +220,15 @@
         <span :class="['tag', planStatusClass(p.status)]">{{ planStatusLabel(p.status) }}</span>
       </div>
       <p v-if="p.campaign_input" class="muted">本计划输入：{{ campaignSummary(p.campaign_input) }}</p>
+      <div class="consistency-check-row">
+        <button class="btn primary" :disabled="checkingConsistencyPlanId === p.id || !standardAnswer.trim()" @click="checkPlanConsistency(p)">
+          {{ checkingConsistencyPlanId === p.id ? '校验中…' : '多源一致性校验' }}
+        </button>
+        <span class="muted">需达到 {{ Math.round(CONSISTENCY_PASS_SCORE * 100) }} 分才可审核；按标准答案关键词重叠计算，仅作口径提示。</span>
+      </div>
+      <p v-if="consistencyFeedback[p.id]" :class="['consistency-feedback', consistencyFeedback[p.id].passed ? 'passed' : 'failed']">
+        {{ consistencyFeedback[p.id].passed ? '全部素材一致性达标，可以进入发布审核。' : '存在未达标素材，请修改文案并重新校验后再审核。' }}
+      </p>
 
       <div v-for="asset in p.assets" :key="asset.id" class="asset">
         <div class="asset-header">
@@ -140,10 +236,23 @@
           <span v-if="asset.citability" :class="['tag', citabilityClass(asset.citability)]">
             可引用性 {{ asset.citability.score }} 分
           </span>
-          <button v-if="asset.citability && asset.citability.score < 60" class="btn small" @click="regenerateAsset(asset)">
+          <span v-if="asset.consistency_score !== null && asset.consistency_score !== undefined"
+                :class="['tag', asset.consistency_score >= CONSISTENCY_PASS_SCORE ? 'active' : 'draft']">
+            一致性 {{ Math.round(asset.consistency_score * 100) }} 分
+          </span>
+          <button v-if="(asset.citability && asset.citability.score < 60) || (asset.consistency_score !== null && asset.consistency_score < CONSISTENCY_PASS_SCORE)" class="btn small" @click="regenerateAsset(asset)">
             🔄 重新生成
           </button>
           <span :class="['tag', assetStatusClass(asset.status)]">{{ assetStatusLabel(asset.status) }}</span>
+        </div>
+        <div v-if="asset.consistency_details" class="consistency-detail">
+          <span v-if="asset.consistency_details.matched_terms.length">
+            已匹配：{{ asset.consistency_details.matched_terms.join('、') }}；
+          </span>
+          <span v-if="asset.consistency_details.missing_terms.length">
+            缺失要点：{{ asset.consistency_details.missing_terms.join('、') }}
+          </span>
+          <span v-else>标准答案中的关键词均已覆盖。</span>
         </div>
 
 
@@ -155,8 +264,8 @@
         </div>
 
         <template v-else>
-          <div class="form-row"><label>标题</label><input v-model="asset.title" class="input" /></div>
-          <div class="form-row"><label>正文</label><textarea v-model="asset.content" rows="8" class="textarea"></textarea></div>
+          <div class="form-row"><label>标题</label><input v-model="asset.title" class="input" @input="invalidateConsistency(asset)" /></div>
+          <div class="form-row"><label>正文</label><textarea v-model="asset.content" rows="8" class="textarea" @input="invalidateConsistency(asset)"></textarea></div>
           <button class="btn" @click="saveAsset(asset)">保存文案</button>
 
           <div class="images">
@@ -171,7 +280,7 @@
           </label>
 
           <div class="asset-actions">
-            <button class="btn" v-if="asset.status === 'draft'" @click="reviewAsset(asset)">审核通过</button>
+            <button class="btn" v-if="asset.status === 'draft'" :disabled="asset.consistency_score === null || asset.consistency_score === undefined || asset.consistency_score < CONSISTENCY_PASS_SCORE" @click="reviewAsset(asset)">审核通过</button>
             <template v-if="asset.status === 'reviewed'">
               <input v-model="asset.publishUrl" class="input" placeholder="发布后公开链接 https://..." />
               <button class="btn primary" @click="publishAsset(asset)">记录已发布</button>
@@ -303,6 +412,7 @@ const CHANNEL_THEMES = {
   government: '#c0392b',
 }
 
+const CONSISTENCY_PASS_SCORE = 0.8
 const businesses = ref([])
 const providers = ref([])
 const businessId = ref(1)
@@ -319,6 +429,25 @@ const activePlanId = ref(null)
 const monitorRuns = ref([])
 const questionSets = ref([])
 const runningAfter = ref(false)
+const questions = ref([])
+const selectedQuestionId = ref(null)
+const featureBrand = ref('')
+const competitorNames = ref('')
+const geoKeywords = ref('')
+const categoryKeywords = ref('')
+const standardAnswer = ref('')
+const diagnosisProvider = ref('kimi_search')
+const coverageResult = ref(null)
+const diagnosisResult = ref(null)
+const multiSourcePlan = ref(null)
+const featureError = ref('')
+const featureSuccess = ref('')
+const savingStandardAnswer = ref(false)
+const checkingCoverage = ref(false)
+const runningDiagnosis = ref(false)
+const loadingFeedPlan = ref(false)
+const checkingConsistencyPlanId = ref(null)
+const consistencyFeedback = ref({})
 
 const publishedAssets = computed(() => {
   const result = []
@@ -347,17 +476,23 @@ const baselineRuns = computed(() => {
 const afterRunsAll = computed(() => monitorRuns.value.filter(r => r.stage === 'after'))
 
 const currentFeedingStep = computed(() => {
-  if (publishedAssets.value.length && baselineRuns.value.length) return 4
-  if (publishedAssets.value.length) return 3
-  if (plans.value.some(p => p.assets && p.assets.length)) return 2
+  if (publishedAssets.value.length) return 6
+  const allAssets = plans.value.flatMap(p => p.assets || [])
+  if (allAssets.some(a => a.status === 'reviewed')) return 5
+  if (allAssets.length && allAssets.every(a => a.consistency_score !== null && a.consistency_score !== undefined && a.consistency_score >= CONSISTENCY_PASS_SCORE)) return 5
+  if (allAssets.length) return 4
+  if (plans.value.length) return 3
+  if (standardAnswer.value.trim() || coverageResult.value || diagnosisResult.value) return 2
   return 1
 })
 
 const feedingWorkflowSteps = computed(() => [
-  { id: 'plan', title: '创建投喂计划', description: '填写业务信息与渠道配置' },
-  { id: 'generate', title: '生成素材', description: 'AI 生成平台文案和指纹' },
-  { id: 'publish', title: '发布审核', description: '发文、核验链接和可引用性' },
-  { id: 'monitor', title: '检测复测', description: '追踪提及率和效果变化' },
+  { id: 'diagnose', title: '问题诊断与口径准备', description: '逆向诊断、覆盖预演、确认标准答案' },
+  { id: 'plan', title: '创建投喂计划', description: '填写业务信息与目标渠道' },
+  { id: 'generate', title: '生成多平台素材', description: '生成渠道文案和内容指纹' },
+  { id: 'consistency', title: '多源一致性校验', description: '对照标准答案检查各平台口径' },
+  { id: 'publish', title: '发布审核', description: '通过校验后发布并核验链接' },
+  { id: 'monitor', title: '检测复测', description: '追踪投喂前后的提及率变化' },
 ])
 
 function questionSetLabel(id) {
@@ -380,6 +515,146 @@ async function loadMonitorData() {
     monitorRuns.value = runs.data
     questionSets.value = qsets.data
   } catch (e) { error.value = e.response?.data?.detail || e.message }
+}
+
+function resetQuestionResults() {
+  coverageResult.value = null
+  diagnosisResult.value = null
+  multiSourcePlan.value = null
+  consistencyFeedback.value = {}
+  standardAnswer.value = ''
+  featureError.value = ''
+  featureSuccess.value = ''
+  loadSavedStandardAnswer(selectedQuestionId.value)
+}
+
+async function loadSavedStandardAnswer(questionId) {
+  if (!questionId) return
+  try {
+    const { data } = await api.get(`/feeding/plan/${questionId}`)
+    if (selectedQuestionId.value !== questionId || data.error) return
+    standardAnswer.value = data.standard_answer
+    featureBrand.value = data.brand || featureBrand.value
+  } catch (e) {
+    if (selectedQuestionId.value === questionId) {
+      featureError.value = e.response?.data?.detail || e.message
+    }
+  }
+}
+
+function featureRequestParams() {
+  return {
+    question_id: selectedQuestionId.value,
+    brand: featureBrand.value.trim(),
+    answer_text: standardAnswer.value.trim(),
+  }
+}
+
+function validateFeatureInputs(requireAnswer = false) {
+  if (!selectedQuestionId.value) {
+    featureError.value = '请先选择目标问题'
+    return false
+  }
+  if (!featureBrand.value.trim()) {
+    featureError.value = '请填写品牌名称'
+    return false
+  }
+  if (requireAnswer && !standardAnswer.value.trim()) {
+    featureError.value = '请先填写标准答案句'
+    return false
+  }
+  return true
+}
+
+async function saveFeatureStandardAnswer() {
+  featureError.value = ''
+  featureSuccess.value = ''
+  if (!validateFeatureInputs(true)) return
+  savingStandardAnswer.value = true
+  try {
+    consistencyFeedback.value = {}
+    await api.post('/feeding/standard_answer', null, { params: featureRequestParams() })
+    await loadPlans()
+    featureSuccess.value = '标准答案已保存。'
+  } catch (e) {
+    featureError.value = e.response?.data?.detail || e.message
+  } finally {
+    savingStandardAnswer.value = false
+  }
+}
+
+async function runCoverageCheck() {
+  featureError.value = ''
+  featureSuccess.value = ''
+  coverageResult.value = null
+  if (!validateFeatureInputs(true)) return
+  checkingCoverage.value = true
+  try {
+    consistencyFeedback.value = {}
+    await api.post('/feeding/standard_answer', null, { params: featureRequestParams() })
+    await loadPlans()
+    const { data } = await api.post(`/coverage/check/${selectedQuestionId.value}`, null, {
+      params: {
+        brand: featureBrand.value.trim(),
+        category_words: categoryKeywords.value.trim(),
+      },
+    })
+    coverageResult.value = data
+  } catch (e) {
+    featureError.value = e.response?.data?.detail || e.message
+  } finally {
+    checkingCoverage.value = false
+  }
+}
+
+async function runReverseDiagnosis() {
+  featureError.value = ''
+  featureSuccess.value = ''
+  diagnosisResult.value = null
+  if (!validateFeatureInputs()) return
+  if (!configuredProviders.value.length) {
+    featureError.value = '请先在后端配置可用的模型 API 密钥'
+    return
+  }
+  runningDiagnosis.value = true
+  try {
+    const { data } = await api.post(`/diagnosis/reverse/${selectedQuestionId.value}`, null, {
+      params: {
+        brand: featureBrand.value.trim(),
+        competitors: competitorNames.value.trim(),
+        model: diagnosisProvider.value,
+        geo: geoKeywords.value.trim(),
+      },
+    })
+    diagnosisResult.value = data
+  } catch (e) {
+    featureError.value = e.response?.data?.detail || e.message
+  } finally {
+    runningDiagnosis.value = false
+  }
+}
+
+async function loadMultiSourcePlan() {
+  featureError.value = ''
+  featureSuccess.value = ''
+  multiSourcePlan.value = null
+  if (!validateFeatureInputs(true)) return
+  loadingFeedPlan.value = true
+  try {
+    consistencyFeedback.value = {}
+    await api.post('/feeding/standard_answer', null, { params: featureRequestParams() })
+    await loadPlans()
+    const { data } = await api.get(`/feeding/plan/${selectedQuestionId.value}`)
+    if (data.error) {
+      featureError.value = data.error
+      return
+    }
+    multiSourcePlan.value = data
+  } catch (e) {
+    featureError.value = e.response?.data?.detail || e.message
+  } finally {
+    loadingFeedPlan.value = false
+  }
 }
 
 async function runAfter(baseline) {
@@ -506,6 +781,7 @@ async function loadBusinessPlatforms() {
 }
 
 async function onBusinessChange() {
+  featureBrand.value = businesses.value.find(b => b.id === businessId.value)?.name || ''
   await loadBusinessPlatforms()
   await loadPlans()
   await loadMonitorData()
@@ -563,8 +839,14 @@ async function createPlan() {
   creating.value = true
   error.value = ''
   try {
+    if (standardAnswer.value.trim()) {
+      if (!validateFeatureInputs(true)) return
+      consistencyFeedback.value = {}
+      await api.post('/feeding/standard_answer', null, { params: featureRequestParams() })
+    }
     await api.post('/feeding-plans', {
       business_id: businessId.value, name: plan.name, provider: plan.provider, channels: plan.channels,
+      question_id: standardAnswer.value.trim() ? selectedQuestionId.value : null,
       business_keywords: plan.business_keywords, activity_name: plan.activity_name,
       promotional_points: plan.promotional_points, event_time: plan.event_time,
       event_location: plan.event_location, event_description: plan.event_description,
@@ -572,6 +854,37 @@ async function createPlan() {
     await loadPlans()
   } catch (e) { error.value = e.response?.data?.detail || e.message }
   finally { creating.value = false }
+}
+
+function invalidateConsistency(asset) {
+  asset.consistency_score = null
+  asset.consistency_details = null
+  consistencyFeedback.value = {}
+}
+
+async function checkPlanConsistency(planItem) {
+  featureError.value = ''
+  featureSuccess.value = ''
+  if (!validateFeatureInputs(true)) return
+  checkingConsistencyPlanId.value = planItem.id
+  try {
+    consistencyFeedback.value = {}
+    await api.post('/feeding/standard_answer', null, { params: featureRequestParams() })
+    const { data } = await api.post(
+      `/feeding-plans/${planItem.id}/consistency-check`,
+      null,
+      { params: { question_id: selectedQuestionId.value } },
+    )
+    consistencyFeedback.value = { ...consistencyFeedback.value, [planItem.id]: data }
+    await loadPlans()
+    featureSuccess.value = data.passed
+      ? '多源一致性校验通过，所有素材可进入发布审核。'
+      : '多源一致性校验未通过，请根据各素材缺失要点修改后重新校验。'
+  } catch (e) {
+    featureError.value = e.response?.data?.detail || e.message
+  } finally {
+    checkingConsistencyPlanId.value = null
+  }
 }
 
 async function saveAsset(asset) {
@@ -617,10 +930,20 @@ async function publishAsset(asset) {
 
 onMounted(async () => {
   try {
-    businesses.value = await getBusinesses()
-    providers.value = await getProviders()
+    const [businessList, providerList, questionList] = await Promise.all([
+      getBusinesses(),
+      getProviders(),
+      api.get('/questions'),
+    ])
+    businesses.value = businessList
+    providers.value = providerList
+    questions.value = questionList.data
     if (businesses.value.length) businessId.value = businesses.value[0].id
     if (configuredProviders.value.length) plan.provider = configuredProviders.value[0].id
+    if (configuredProviders.value.length) diagnosisProvider.value = configuredProviders.value[0].id
+    if (questions.value.length) selectedQuestionId.value = questions.value[0].id
+    featureBrand.value = businesses.value.find(b => b.id === businessId.value)?.name || ''
+    await loadSavedStandardAnswer(selectedQuestionId.value)
     await loadBusinessPlatforms()
     await loadPlans()
     await loadMonitorData()
@@ -629,7 +952,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.workflow-summary { display: grid; grid-template-columns: repeat(4, minmax(180px, 1fr)); gap: 16px; margin: 0 0 18px; }
+.workflow-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0 0 18px; }
 .workflow-step { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; border: 1px solid #e4ebe6; background: #f9faf9; }
 .workflow-step.active { border-color: #9ad6c4; background: #edf9f4; }
 .workflow-step.done { border-color: #b7dcc8; background: #ecfdf5; }
@@ -729,5 +1052,33 @@ textarea { width: 100%; }
 .chat-brief { display: flex; align-items: center; justify-content: space-between; background: #e9f5ef; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-size: 14px; }
 .chat-input-row { display: flex; gap: 10px; }
 .chat-input-row .input { flex: 1; }
+.consistency-check-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
+.consistency-detail { color: #8a4b08; background: #fffaf0; border-radius: 8px; padding: 8px 10px; margin: 8px 0 12px; font-size: 13px; }
+.consistency-feedback { margin: 8px 0; font-size: 13px; }
+.consistency-feedback.passed { color: #116b55; }
+.consistency-feedback.failed { color: #b45309; }
+.feature-form { margin-top: 14px; }
+.feature-form textarea { min-height: 76px; }
+.feature-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.feature-success { color: #116b55; font-size: 13px; margin-top: 10px; }
+.feature-results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+.feature-result { border: 1px solid #e4ebe6; border-radius: 10px; padding: 14px 16px; background: #fafcfb; }
+.feature-result h3 { margin: 0 0 10px; font-size: 15px; }
+.feature-result p { margin: 6px 0; font-size: 14px; line-height: 1.6; }
+.feature-result .feature-score { color: #116b55; font-size: 26px; font-weight: 700; }
+.feature-result-wide { grid-column: 1 / -1; }
+.platform-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+
+@media (max-width: 720px) {
+  .workflow-summary { grid-template-columns: 1fr; }
+  .feature-results { grid-template-columns: 1fr; }
+  .feature-result-wide { grid-column: auto; }
+  .form-row { flex-direction: column; gap: 6px; }
+  .form-row label { padding-top: 0; }
+}
+
+@media (min-width: 721px) and (max-width: 1024px) {
+  .workflow-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 
 </style>
