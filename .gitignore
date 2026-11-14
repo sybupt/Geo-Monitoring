@@ -35,3 +35,7 @@ start-dev.bat
 stop-dev.bat
 push.bat
 sync-server.bat
+
+# SQLite 运行时文件
+*.db-shm
+*.db-wal

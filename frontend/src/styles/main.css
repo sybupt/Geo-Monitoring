@@ -16,7 +16,11 @@ body { margin: 0; font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; backgr
 .model-row { display: flex; align-items: center; gap: 6px; }
 .dot { width: 8px; height: 8px; border-radius: 50%; }
 .dot.on { background: #34d399; }
+.dot.warn { background: #f59e0b; }
 .dot.off { background: #cbd5d1; }
+.coverage-line { font-size: 12px; color: var(--muted); line-height: 1.6; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.coverage-line b { color: var(--ink); }
+.footer-link { font-size: 12px; color: var(--green); text-decoration: none; }
 .muted { color: var(--muted); font-size: 12px; }
 .content { flex: 1; padding: 28px 34px; max-width: 1280px; }
 .page { display: flex; flex-direction: column; gap: 22px; }

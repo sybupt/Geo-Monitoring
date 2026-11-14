@@ -4,5 +4,8 @@ sqlalchemy
 apscheduler
 python-dotenv
 openai
+httpx
 requests
 python-multipart
+# 腾讯元宝探测量用（浏览器自动化）；只用系统 Chrome 的话无需再 playwright install
+playwright
