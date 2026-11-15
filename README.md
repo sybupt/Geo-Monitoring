@@ -132,6 +132,7 @@ backend/app/
 | GET | `/api/v2/batches/{id}/report` | 报告（带口径告警）+ 分题明细 |
 | GET | `/api/v2/batches/{id}/samples` | 原始回答与逐条判定，可人工复核 |
 | POST | `/api/v2/batches/{id}/resume` | 断点续跑 |
+| POST | `/api/v2/batches/{id}/cancel` | 停止跑批（协作式：正在飞的一条会跑完，之后不再发起；未跑的保留待跑） |
 | GET | `/api/v2/did?before=&after=` | 两次跑批的 DID 归因 |
 | GET | `/api/v2/channels` | 本地生活渠道画像（api/rpa/guide 三种发布模式） |
 | POST | `/api/v2/channel-accounts` | 渠道账号绑定（只存凭据引用，不存明文） |
@@ -175,6 +176,54 @@ curl -s -X POST http://127.0.0.1:8088/api/v2/batches \
 ```
 
 换成真实引擎只需把 `engines` 改成 `["doubao","kimi","deepseek"]` 并配好 `.env`。
+
+## P1 规则学习与投喂闭环（不依赖模型 Key）
+
+位置：侧边栏「规则与内容」（`/v2/rules`）。这条链路在**没有任何模型 Key** 时也能完整跑通——
+规则学习用确定性统计、内容生成用事实模板、复测走 mock 模拟引擎。
+
+```
+学规则（引擎×渠道） → 按规则生成稿子 → 事实校验 → 投喂 → 复测对比
+     prior/measured      10 种渠道体裁     四道闸      模拟语料   提及率 before/after
+```
+
+### 规则的两条来源（口径必须分清）
+
+| 来源 | 说明 | 能否对外说 |
+|---|---|---|
+| `prior` | 先验：按公开的引擎信源画像（豆包偏抖音/点评、元宝偏公众号、文心偏百家号/百科…）冷启动 | 不能说是「实测模型偏好」 |
+| `measured` | 实测：从真实跑批样本统计「满足某特征的回答 vs 不满足」的可见度差（lift），证据量落库 | 可以，需标注样本量 |
+
+实测规则永远不被先验覆盖（`store.upsert` 硬约束）；跨引擎 lift 接近的规则自动合并为 shared。
+
+### 内容生成的四道闸（validator）
+
+1. **数字出处**：正文里每个带单位的数字都必须能在企业事实（facts）里找到，编造直接 fatal；
+2. **极限词**：`最好/第一/唯一/顶级…`（序数词「第一，」不算）→ fatal；
+3. **实体强度**：品牌名 <2 次 → fatal（检索到了也归因不到）；
+4. **渠道适配**：口播脚本不要求 FAQ、地图页不要求第一人称，规则按渠道过滤后才生效。
+
+校验不通过的稿子**不允许投喂**（接口层硬拦截）。
+
+### 接口
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/api/v2/rules/learn` | 学规则（`mode=prior\|measured`，measured 需传 batch_id） |
+| GET | `/api/v2/rules` | 规则清单（按引擎/渠道过滤） |
+| POST | `/api/v2/content/generate` | 单篇生成+校验 |
+| POST | `/api/v2/content/generate-batch` | 按「引擎×亲和渠道」批量出稿 |
+| POST | `/api/v2/content/{id}/feed` | 投喂到模拟语料（校验通过才行） |
+| POST | `/api/v2/loop/demo` | 一键闭环：学规则→出稿→投喂→before/after 复测 |
+
+演示前先补企业事实：`python scripts/seed_demo_business.py`（事实里必须有价格/面积/年限等数字，
+否则「数字密度」规则无法满足、稿子会被判不通过——这是设计如此）。
+
+### 模拟的边界
+
+mock 引擎在「有已投喂稿件」时会抬升提及概率（上限 0.78 + 采样间抖动），并引用稿件地址。
+所以闭环演示能展示 +10~20pp 的提升，但**所有这类数字只能用于功能验证**，报表标 `SIMULATION`。
+接上真实 Key 后：用 `mode=measured` 重学规则 → 真实跑批做 before/after → DID 归因。
 
 ### 已知边界
 

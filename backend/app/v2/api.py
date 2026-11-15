@@ -213,6 +213,32 @@ def resume_batch(batch_id: int, background: BackgroundTasks):
     return {"batch_id": batch_id, "remaining": left}
 
 
+@router.post("/batches/{batch_id}/cancel", status_code=202)
+def cancel_batch(batch_id: int):
+    """停止跑批。正在飞的那一条请求会跑完（HTTP 请求没法安全中断），之后的全部不再发起。
+
+    已完成的样本保留，未跑的保持 pending，之后还能 resume 接着跑。
+    """
+    with SessionLocal() as db:
+        batch = db.get(ProbeBatch, batch_id)
+        if batch is None:
+            raise HTTPException(404, "批次不存在")
+        if batch.status not in ("running", "pending"):
+            return {"batch_id": batch_id, "cancelled": False, "message": f"批次已是 {batch.status}，无需停止"}
+        left = (
+            db.query(ProbeSample)
+            .filter(ProbeSample.batch_id == batch_id, ProbeSample.error == "pending")
+            .count()
+        )
+    service.request_cancel(batch_id)
+    return {
+        "batch_id": batch_id,
+        "cancelled": True,
+        "remaining": left,
+        "message": f"已停止：不再发起新的请求，剩余 {left} 条保持待跑（可随时续跑）",
+    }
+
+
 @router.get("/did")
 def did(before: int, after: int):
     """两次跑批的 DID 归因。before/after 都要包含对照组样本，否则只返回提示。"""

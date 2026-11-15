@@ -5,6 +5,7 @@ const routes = [
   { path: '/', redirect: '/v2/console' },
   { path: '/v2/console', name: 'v2-console', component: () => import('../views/V2Console.vue'), meta: { title: '可信度量台' } },
   { path: '/v2/channel', name: 'v2-channel', component: () => import('../views/V2Channel.vue'), meta: { title: '渠道分发' } },
+  { path: '/v2/rules', name: 'v2-rules', component: () => import('../views/V2Rules.vue'), meta: { title: '规则与内容' } },
   { path: '/situation', name: 'situation', component: () => import('../views/SituationView.vue'), meta: { title: '态势展示' } },
   { path: '/overview', name: 'overview', component: Overview, meta: { title: '效果总览' } },
   { path: '/citation-insight', name: 'citation-insight', component: () => import('../views/CitationInsight.vue'), meta: { title: '引用洞察' } },

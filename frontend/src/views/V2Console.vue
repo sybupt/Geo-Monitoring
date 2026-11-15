@@ -121,7 +121,14 @@
             <td>{{ b.n_samples }}</td>
             <td class="muted">{{ b.engines.join(', ') }}</td>
             <td class="muted">{{ b.note }}</td>
-            <td><button class="btn tiny" @click="openBatch(b.batch_id)">看报告</button></td>
+            <td>
+              <button class="btn tiny" @click="openBatch(b.batch_id)">看报告</button>
+              <button
+                v-if="['running', 'pending'].includes(b.status)"
+                class="btn tiny danger"
+                @click="stopBatch(b.batch_id)"
+              >停止</button>
+            </td>
           </tr>
           <tr v-if="!batches.length"><td colspan="8" class="muted">还没有批次</td></tr>
         </tbody>
@@ -281,7 +288,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import {
-  createBatch, getBatchReport, getBusinesses, getDid, getEngineCatalog,
+  cancelBatch, createBatch, getBatchReport, getBusinesses, getDid, getEngineCatalog,
   getJudgeQuality, listBatches, previewQuestions,
 } from '../api'
 
@@ -318,7 +325,7 @@ const ciText = (block) => (block?.ci95 ? `[${pct(block.ci95[0])}, ${pct(block.ci
 const citeLabel = (t) =>
   ({ answer_level: '答案级', retrieval_pool: '检索面', caller_supplied: '自供候选', none: '无引用', mock: '模拟' }[t] || t || '—')
 const stageLabel = (s) => ({ baseline: '基线', after: '复测', adhoc: '临时' }[s] || s)
-const statusClass = (s) => ({ done: 'ok', partial: 'warn', failed: 'bad', running: 'warn' }[s] || 'gray')
+const statusClass = (s) => ({ done: 'ok', partial: 'warn', failed: 'bad', running: 'warn', cancelled: 'gray' }[s] || 'gray')
 const barWidth = (cnt, list) => {
   const max = Math.max(...(list || []).map(([, v]) => v), 1)
   return `${Math.round((cnt / max) * 100)}%`
@@ -395,11 +402,24 @@ function poll(id) {
   timer = setInterval(async () => {
     const r = await getBatchReport(id)
     report.value = r
-    if (['done', 'partial', 'failed'].includes(r.status)) {
+    if (['done', 'partial', 'failed', 'cancelled'].includes(r.status)) {
       clearInterval(timer)
       await loadBatches()
     }
   }, 3000)
+}
+
+async function stopBatch(id) {
+  if (!confirm(`停止批次 #${id}？已完成的样本会保留，剩余样本可随时续跑。`)) return
+  try {
+    const r = await cancelBatch(id)
+    errMsg.value = r.message || '已停止'
+    clearInterval(timer)
+    await loadBatches()
+    if (report.value?.batch_id === id) report.value = await getBatchReport(id)
+  } catch (e) {
+    errMsg.value = e?.response?.data?.detail || '停止失败'
+  }
 }
 
 async function doDid() {
@@ -439,6 +459,7 @@ onMounted(loadBase)
 .btn { padding: 9px 18px; border-radius: 8px; border: 1px solid var(--green); background: var(--green); color: #fff; font-size: 14px; cursor: pointer; }
 .btn.ghost { background: #fff; color: var(--green); }
 .btn.tiny { padding: 4px 12px; font-size: 12px; }
+.btn.tiny.danger { background: #fff; color: #b42318; border-color: #f0b4ae; margin-left: 6px; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 .err { color: #b91c1c; font-size: 13px; }
 .banner { background: #fff; border: 1px solid var(--line); border-left: 3px solid var(--green); border-radius: 10px; padding: 12px 16px; font-size: 13px; color: var(--muted); line-height: 1.8; }

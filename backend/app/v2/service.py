@@ -28,6 +28,28 @@ from app.probes import TokenBucket, get_adapter
 from app.v2.models import ProbeBatch, ProbeSample
 
 _WRITE_LOCK = threading.Lock()
+
+# ── 协作式取消 ──────────────────────────────────────────────────
+# 跑批在后台线程里一条条发请求，从外部强杀线程会留下半写的样例记录、还会占着连接不放。
+# 所以用标志位：外部请求取消 → 置标志 → 跑批循环在下一条采样前看到标志就收工，
+# 已跑完的样本全部保留，未跑的保持 pending，随时可以 resume 接着跑。
+_CANCEL_LOCK = threading.Lock()
+_CANCELLED: set[int] = set()
+
+
+def request_cancel(batch_id: int) -> None:
+    with _CANCEL_LOCK:
+        _CANCELLED.add(batch_id)
+
+
+def is_cancelled(batch_id: int) -> bool:
+    with _CANCEL_LOCK:
+        return batch_id in _CANCELLED
+
+
+def _clear_cancel(batch_id: int) -> None:
+    with _CANCEL_LOCK:
+        _CANCELLED.discard(batch_id)
 _BUCKETS: dict[str, TokenBucket] = {}
 _BUCKET_LOCK = threading.Lock()
 _WAL_READY = False
@@ -193,6 +215,8 @@ def _run_engine(
     bucket = _bucket(engine_id)
 
     for sample_id, qkey, qtext, intent, is_control, idx in tasks:
+        if is_cancelled(batch_id):
+            break
         bucket.acquire()
         try:
             result = adapter.probe(qtext, sample_idx=idx)
@@ -243,6 +267,8 @@ def _run_engine(
 def run_batch(batch_id: int) -> None:
     """后台跑批入口。幂等：已完成（ok=1）的采样会被跳过，支持断点续跑。"""
     ensure_sqlite_pragmas()
+    # 每次开跑先清掉上一次的取消标志：否则「取消 → 续跑」会被老标志立刻打断
+    _clear_cancel(batch_id)
     with SessionLocal() as db:
         batch = db.get(ProbeBatch, batch_id)
         if batch is None:
@@ -293,7 +319,10 @@ def run_batch(batch_id: int) -> None:
                 .count()
             )
             total = db.query(ProbeSample).filter(ProbeSample.batch_id == batch_id).count()
-            if pending:
+            if is_cancelled(batch_id):
+                # 主动停止：不算 partial（partial 是「有失败」），单独标 cancelled 更诚实
+                batch.status = "cancelled"
+            elif pending:
                 batch.status = "partial"
             elif failed == total:
                 batch.status = "failed"

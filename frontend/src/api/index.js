@@ -54,6 +54,11 @@ export async function resumeBatch(batchId) {
   return data
 }
 
+export async function cancelBatch(batchId) {
+  const { data } = await api.post(`/v2/batches/${batchId}/cancel`)
+  return data
+}
+
 export async function getDid(beforeId, afterId) {
   const { data } = await api.get('/v2/did', { params: { before: beforeId, after: afterId } })
   return data
@@ -96,6 +101,48 @@ export async function markPublished(taskId, publishedUrl) {
 
 export async function checkPublished(taskId) {
   const { data } = await api.post(`/v2/publish-tasks/${taskId}/check`)
+  return data
+}
+
+// ── 规则库 / 内容生成 / 闭环 ──────────────────────────────
+
+export async function learnRules(payload) {
+  const { data } = await api.post('/v2/rules/learn', payload)
+  return data
+}
+
+export async function getRules(params = {}) {
+  const { data } = await api.get('/v2/rules', { params })
+  return data
+}
+
+export async function generateContent(payload) {
+  const { data } = await api.post('/v2/content/generate', payload)
+  return data
+}
+
+export async function generateContentBatch(payload) {
+  const { data } = await api.post('/v2/content/generate-batch', payload)
+  return data
+}
+
+export async function listContent(businessId) {
+  const { data } = await api.get('/v2/content', { params: { business_id: businessId } })
+  return data
+}
+
+export async function feedContent(contentId) {
+  const { data } = await api.post(`/v2/content/${contentId}/feed`)
+  return data
+}
+
+export async function runLoopDemo(payload) {
+  const { data } = await api.post('/v2/loop/demo', payload)
+  return data
+}
+
+export async function clearSimCorpus(businessId) {
+  const { data } = await api.delete('/v2/sim/corpus', { params: { business_id: businessId } })
   return data
 }
 

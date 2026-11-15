@@ -36,6 +36,7 @@ import { getEngineCatalog } from './api'
 const navItems = [
   { path: '/v2/console', title: '可信度量台' },
   { path: '/v2/channel', title: '渠道分发' },
+  { path: '/v2/rules', title: '规则与内容' },
   { path: '/situation', title: '态势展示' },
   { path: '/members', title: '会员管理' },
   { path: '/overview', title: '效果总览' },

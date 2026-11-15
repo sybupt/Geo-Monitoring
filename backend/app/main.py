@@ -17,7 +17,9 @@ from starlette.responses import FileResponse, Response
 from app.database import engine, Base, SessionLocal
 import app.models
 import app.v2.models  # noqa: F401  v2 表（多采样/渠道/发布/抽检）需要注册到 metadata
+import app.rules.models  # noqa: F401  规则库 / 内容资产 / 模拟语料表
 from app.v2.api import router as v2_router
+from app.rules.api import router as rules_router
 from app.models import (
     Business, Citation, EffectReport, FeedingAsset, FeedingImage, FeedingPlan,
     MonitorRun, MonitorResult, Question, QuestionSet, QuestionSetItem,
@@ -162,6 +164,7 @@ ensure_monitor_result_columns()
 
 app = FastAPI(title="文旅 AI GEO")
 app.include_router(v2_router)
+app.include_router(rules_router)
 
 
 class MonitorRequest(BaseModel):
