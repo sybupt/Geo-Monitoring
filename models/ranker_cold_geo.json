@@ -1,0 +1,17 @@
+{
+  "features": [
+    "content",
+    "brand_pref",
+    "price_fit",
+    "cat_pref",
+    "gqs",
+    "gqs_rank_in_cat",
+    "text_len",
+    "geo_conclusion",
+    "geo_structured",
+    "geo_quantified",
+    "geo_no_hype",
+    "geo_affinity"
+  ],
+  "history": []
+}

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>知位 NEO · 生态位经营系统</title>
+<link rel="stylesheet" href="/static/styles.css?v=24">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1>知位<span class="mark" title="NEO · Niche Ecosystem Operation 生态位经营">NEO</span></h1>
+    <div class="slogan" title="不是流量，不是盲推，不是排名优化，与模型一起进化，构建你的生态位">
+      <div class="sl-main">读懂企业真实力，占住模型生态位</div>
+      <div class="sl-sub"><span class="no">不是流量</span>，<span class="no">不是盲推</span>，<span class="no">不是排名优化</span>，<span class="yes">与模型一起进化，构建你的生态位</span></div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <span class="pill" id="status">加载中…</span>
+</header>
+
+<!-- 全局任务上下文：只保留目标物。模型在第 3 步点矩阵格选择、
+     第 4 步页内多选、第 5 步逐行自带、第 6 步页内切换。 -->
+<div class="ctx">
+  <div class="ctx-item">
+    <label>目标物</label>
+    <select id="ctx-target"></select>
+  </div>
+  <div class="ctx-progress" id="ctx-progress"></div>
+</div>
+
+<div class="loopbar" aria-label="知位飞轮">
+  <span class="loop-lead">知位飞轮</span>
+  <span class="loop-step">知企</span><i>→</i>
+  <span class="loop-step">定位</span><i>→</i>
+  <span class="loop-step">学规</span><i>→</i>
+  <span class="loop-step">育稿</span><i>→</i>
+  <span class="loop-step">投喂</span><i>→</i>
+  <span class="loop-step">复测</span><i>↺</i>
+  <span class="loop-note">规则沉淀 · 模型迭代即重学 · 越投喂越懂你</span>
+</div>
+
+<nav class="tabs" id="tabs">
+  <button data-view="members" title="会员管理 · 生态位台账：谁在经营哪个生态位、缴费到哪一级" class="active"><i>1</i>会员管理</button>
+  <button data-view="rec" title="推荐流 · 生态位总览：企业真实力与当前生态位"><i>2</i>推荐流</button>
+  <button data-view="questions" title="测试问题集 · 需求镜像：用户真实会怎么问"><i>3</i>测试问题集</button>
+  <button data-view="rules" title="规则与矩阵 · 模型偏好：6 模型 × 11 渠道学规则"><i>4</i>规则与矩阵</button>
+  <button data-view="optimize" title="内容体检与改写 · 实力显影：把核心实力写成模型爱引用的样子"><i>5</i>内容体检与改写</button>
+  <button data-view="feed" title="引导投喂 · 有意义投喂：投给对的模型、对的渠道、对的时间"><i>6</i>引导投喂</button>
+  <button data-view="board" title="效果看板 · 生态位复测：同一批问法前后对比"><i>7</i>效果看板</button>
+</nav>
+
+<main>
+  <!-- ============ 1 推荐流：要被投喂的东西 ============ -->
+  <section class="view active" id="view-rec">
+    <div class="toolbar">
+      <input type="text" id="rec-q" placeholder="搜索企业 / 品牌 / 行业…">
+      <select id="rec-sort">
+        <option value="gqs_asc">内容分最低优先</option>
+        <option value="gqs">内容分最高优先</option>
+        <option value="hot">热度最高</option>
+        <option value="price">价格最高</option>
+        <option value="new">最新上架</option>
+      </select>
+      <div style="flex:1"></div>
+      <span class="note" id="rec-meta"></span>
+    </div>
+    <div class="chips" id="rec-cats" style="margin-bottom:14px"></div>
+    <div id="rec-detail"></div>
+    <div id="rec-grid" class="tgrid"><div class="loading">加载目标物…</div></div>
+  </section>
+
+  <!-- ============ 2 测试问题集 ============ -->
+  <section class="view" id="view-questions">
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-head">
+        <h2>维度问题集</h2>
+        <span class="hint" id="qz-meta">按目标物行业生成多维度问法（参数党/口味/价格/避坑/干净……），不绑定模型与渠道</span>
+        <div style="flex:1"></div>
+        <button class="btn" id="qz-chat">对话式出题</button>
+        <button class="btn" id="qz-gen-dims">按行业生成维度问题集</button>
+      </div>
+      <div class="panel-body" id="qz-list"><div class="loading">加载维度问题集…</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <h2>全模型提及率基线</h2>
+        <span class="hint">每个维度的问题集 × 全部模型；模型偏好从这里读出来</span>
+        <div style="flex:1"></div>
+        <button class="btn" id="qz-baseline">测全部模型基线</button>
+      </div>
+      <div class="panel-body" id="qz-base"><div class="empty">还没测过基线</div></div>
+    </div>
+  </section>
+
+  <!-- ============ 3 规则与矩阵 ============ -->
+  <section class="view" id="view-rules">
+    <div class="toolbar">
+      <button class="btn" id="rl-learn-cell">重学该格</button>
+      <button class="btn" id="rl-learn-all">按当前目标物学习全部格子</button>
+      <div style="flex:1"></div>
+      <span class="note" id="rl-meta"></span>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2>AutoGEO 规则的可执行化</h2>
+        <span class="hint">论文里的规则人可读、机器不可算；这里降维成 10 个确定性检查器，每条都能算分</span>
+      </div>
+      <div class="panel-body" id="rl-checks"><div class="loading">加载规则…</div></div>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
+      <div class="panel-head">
+        <h2>规则矩阵</h2>
+        <span class="hint">行 = 模型，列 = 渠道；格内为从测试问题学到的 AUC，点一格看它下面的规则</span>
+      </div>
+      <div class="panel-body" id="rl-grid"><div class="loading">加载矩阵…</div></div>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
+      <div class="panel-head">
+        <h2>模型 × 维度偏好</h2>
+        <span class="hint">来自第 2 步的全模型基线：改写时往各模型最容易引用的维度发力</span>
+      </div>
+      <div class="panel-body" id="rl-pref"><div class="empty">先去「测试问题集」测一轮全模型基线</div></div>
+    </div>
+
+    <div class="split" style="margin-top:16px">
+      <div class="panel">
+        <div class="panel-head">
+          <h2 id="rl-card-title">该格规则卡</h2>
+          <span class="hint" id="rl-card-meta"></span>
+        </div>
+        <div class="panel-body" id="rl-card"><div class="empty">从矩阵里点一格</div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <h2>渠道硬约束</h2>
+          <span class="hint" id="rl-policy-meta"></span>
+        </div>
+        <div class="panel-body" id="rl-policy"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 4 内容体检与改写 ============ -->
+  <section class="view" id="view-optimize">
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-head">
+        <h2>改写作业</h2>
+        <span class="hint" id="op-meta">选好目标模型（可多个）后，按会员套餐渠道生成投喂稿</span>
+      </div>
+      <div class="panel-body">
+        <div class="sub-title">目标模型（可多选：想让目标物在哪些模型下提升提及率）</div>
+        <div class="chips" id="op-models" style="margin-bottom:12px"></div>
+        <div class="sub-title">投放渠道（按会员套餐自动带出）</div>
+        <div class="chips" id="op-channels" style="margin-bottom:12px"></div>
+        <div class="note" id="op-plan" style="margin-bottom:12px"></div>
+        <div class="toolbar" style="margin-bottom:0">
+          <button class="btn" id="op-run">生成投喂稿</button>
+          <span class="note" id="op-note"></span>
+        </div>
+      </div>
+    </div>
+    <div class="cards" id="op-cards"></div>
+    <div id="op-list"></div>
+  </section>
+
+  <!-- ============ 5 引导投喂 ============ -->
+  <section class="view" id="view-feed">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>投喂排期</h2>
+        <span class="hint">先落地权威页，再扩散到社区——顺序错了社区内容没有可引用对象</span>
+      </div>
+      <div class="panel-body" id="fd-sched"><div class="loading">加载作业单…</div></div>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <div class="panel-head"><h2>渠道作业单</h2><span class="hint">仅「审核通过」的稿子可登记；回填链接、投放时长与目标模型</span></div>
+      <div class="panel-body" id="fd-list"></div>
+    </div>
+  </section>
+
+  <!-- ============ 6 效果看板 ============ -->
+  <section class="view" id="view-board">
+    <div class="chips" id="bd-models" style="margin-bottom:14px"></div>
+    <div class="cards" id="bd-cards"><div class="loading">加载看板…</div></div>
+    <div class="panel">
+      <div class="panel-head">
+        <h2>渠道效果对比</h2>
+        <span class="hint">基线 → 复测1 → 复测2，间隔以真实复测时间为准；z 为两比例检验</span>
+      </div>
+      <div class="panel-body" id="bd-table"></div>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <div class="panel-head"><h2>投喂记录</h2><span class="hint" id="bd-feed-meta"></span></div>
+      <div class="panel-body" id="bd-feeds"></div>
+    </div>
+  </section>
+
+
+
+<!-- ============ 7 会员管理 ============ -->
+  <section class="view" id="view-members">
+    <div class="cards" id="mb-cards"><div class="loading">加载会员汇总…</div></div>
+    <div class="plan-cards" id="mb-plans" style="margin:16px 0"></div>
+    <div class="panel">
+      <div class="panel-head">
+        <h2>会员企业</h2>
+        <span class="hint">会员名 = 企业主体；推广对象可以是企业品牌，也可以是某个具体产品；级别由缴费决定</span>
+      </div>
+      <div class="panel-body" id="mb-table"><div class="loading">加载会员…</div></div>
+    </div>
+  </section>
+</main>
+
+<!-- 对话式出题窗口：文字 + 语音（Web Speech API），按要求生成测试问题集 -->
+<button class="chat-fab" id="chat-fab" title="对话式出题">
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+</button>
+<div class="chat-win" id="chat-win" hidden>
+  <div class="chat-head">
+    <div>
+      <b>对话式出题</b>
+      <span class="hint" id="chat-sub">说出或输入你的要求，我按目标物生成测试问题集</span>
+    </div>
+    <button class="chat-x" id="chat-close" title="关闭">✕</button>
+  </div>
+  <div class="chat-msgs" id="chat-msgs"></div>
+  <div class="chat-input">
+    <button class="chat-mic" id="chat-mic" title="语音输入">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+    </button>
+    <input type="text" id="chat-text" placeholder="例如：重点出价格和避坑的问题，再补几个送礼场景的">
+    <button class="btn" id="chat-send">发送</button>
+  </div>
+  <div class="chat-note" id="chat-note"></div>
+</div>
+
+
+<script src="/static/core.js?v=22"></script>
+<script src="/static/chat.js?v=19"></script>
+<script src="/static/view-targets.js?v=19"></script>
+<script src="/static/view-questions.js?v=19"></script>
+<script src="/static/view-rules.js?v=19"></script>
+<script src="/static/view-optimize.js?v=19"></script>
+<script src="/static/view-feed.js?v=24"></script>
+<script src="/static/view-board.js?v=27"></script>
+<script src="/static/view-members.js?v=19"></script>
+</body>
+</html>

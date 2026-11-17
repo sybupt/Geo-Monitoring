@@ -7,35 +7,21 @@ venv/
 
 # 密钥（绝不提交）
 .env
+.env.local
 
-# 数据库（运行时数据，不提交）
-geo.db
+# SQLite 运行时数据（app 启动时自动创建并 seed）
 *.db
+*.db-shm
+*.db-wal
 
-# 日志
+# 日志与截图
 *.log
-
-# 上传的图片（运行时数据）
-backend/data/
-data/feeding_images/
-
-# 前端
-frontend/node_modules/
-frontend/dist/
+_bat.log
+_bat.err
+_shots/
 
 # IDE
 .vscode/
 .idea/
-
-# 结果文件
-results/*.json
-
-# 一键操作
-start-dev.bat
-stop-dev.bat
-push.bat
-sync-server.bat
-
-# SQLite 运行时文件
-*.db-shm
-*.db-wal
+.DS_Store
+Thumbs.db

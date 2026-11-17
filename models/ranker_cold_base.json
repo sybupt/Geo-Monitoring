@@ -1,0 +1,9 @@
+{
+  "features": [
+    "content",
+    "brand_pref",
+    "price_fit",
+    "cat_pref"
+  ],
+  "history": []
+}
