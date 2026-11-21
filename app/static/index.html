@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>知位 NEO · 生态位经营系统</title>
-<link rel="stylesheet" href="/static/styles.css?v=30">
+<link rel="stylesheet" href="/static/styles.css?v=31">
 </head>
 <body>
 <div class="app">
@@ -242,14 +242,36 @@
   <div class="chat-note" id="chat-note"></div>
 </div>
 
-<script src="/static/core.js?v=30"></script>
-<script src="/static/chat.js?v=30"></script>
-<script src="/static/view-targets.js?v=30"></script>
-<script src="/static/view-questions.js?v=30"></script>
-<script src="/static/view-rules.js?v=30"></script>
-<script src="/static/view-optimize.js?v=30"></script>
-<script src="/static/view-feed.js?v=30"></script>
-<script src="/static/view-board.js?v=30"></script>
-<script src="/static/view-members.js?v=30"></script>
+<!-- 投喂文章预览弹窗：支持排版预览 / 原文文本切换与一键复制 -->
+<div class="modal-backdrop" id="preview-modal" hidden>
+  <div class="modal-win" role="dialog" aria-modal="true" aria-labelledby="pv-title">
+    <div class="modal-head">
+      <div>
+        <h3 id="pv-title">文章预览</h3>
+        <div class="modal-meta" id="pv-meta"></div>
+      </div>
+      <div class="modal-tools">
+        <button class="chip-btn on" id="pv-mode-rich" type="button">排版预览</button>
+        <button class="chip-btn" id="pv-mode-raw" type="button">纯文本</button>
+        <button class="btn ghost" id="pv-copy" type="button">复制正文</button>
+        <button class="chat-x" id="pv-close" type="button" title="关闭">✕</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <article class="md-preview" id="pv-rich"></article>
+      <pre class="item-text" id="pv-raw" hidden></pre>
+    </div>
+  </div>
+</div>
+
+<script src="/static/core.js?v=31"></script>
+<script src="/static/chat.js?v=31"></script>
+<script src="/static/view-targets.js?v=31"></script>
+<script src="/static/view-questions.js?v=31"></script>
+<script src="/static/view-rules.js?v=32"></script>
+<script src="/static/view-optimize.js?v=32"></script>
+<script src="/static/view-feed.js?v=31"></script>
+<script src="/static/view-board.js?v=31"></script>
+<script src="/static/view-members.js?v=31"></script>
 </body>
 </html>

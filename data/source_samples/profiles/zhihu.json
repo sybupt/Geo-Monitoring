@@ -1,0 +1,58 @@
+{
+  "channel_id": "zhihu",
+  "updated_at": "2026-11-21 09:55 UTC",
+  "sample_count": 1,
+  "stats": {
+    "avg_chars": 2241.0,
+    "avg_title_len": 21.0,
+    "avg_para_count": 34.0,
+    "avg_para_len": 65.9,
+    "avg_headings": 5.0,
+    "avg_list_items": 0.0,
+    "table_ratio": 0.0,
+    "jsonld_ratio": 0.0,
+    "faq_ratio": 0.0,
+    "numbers_per_1k": 12.0,
+    "avg_gqs": 64.4
+  },
+  "geo_avg_scores": {
+    "conclusion_first": 0.35,
+    "structured": 0.05,
+    "quantified": 1.0,
+    "sourced": 1.0,
+    "atomic": 1.0,
+    "no_hype": 0.56,
+    "self_contained": 1.0,
+    "term_defined": 0.93,
+    "timeliness": 0.2,
+    "balanced": 0.55
+  },
+  "sample_headings": [
+    "二、总结",
+    "1、【性价比之选】",
+    "2、【200元以内】",
+    "3、【200-300元】",
+    "4、【300-500元】"
+  ],
+  "sample_openings": [
+    "618开启，记得领取一下最高26618的红包哦"
+  ],
+  "prompt_guidance": [
+    "参考该渠道实采 1 篇代表性网页：平均正文约 2241 字，平均每段 65 字（共约 34 段）",
+    "标题长度约 21 字，正文平均包含 5.0 个小标题、0.0 条列表项",
+    "量化信息密度约 12.0 个数字/千字；表格出现率 0%，结构化 JSON-LD 覆盖率 0%",
+    "该站点常见小标题风格示例：「二、总结」 / 「1、【性价比之选】」 / 「2、【200元以内】」 / 「3、【200-300元】」",
+    "该站点首段常见开篇节奏示例：「618开启，记得领取一下最高26618的红包哦…」"
+  ],
+  "samples": [
+    {
+      "file": "75a1767cf3d138cc0ba2.html",
+      "url": "https://www.zhihu.com/tardis/zm/art/456992580",
+      "title": "2026年台灯怎么选|含台灯推荐618更新",
+      "char_count": 2241,
+      "heading_count": 5,
+      "list_item_count": 0,
+      "gqs": 64.4
+    }
+  ]
+}

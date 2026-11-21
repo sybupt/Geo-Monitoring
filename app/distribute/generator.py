@@ -6,12 +6,17 @@
 """
 from __future__ import annotations
 
+import json
 import re
+import time
+import urllib.request
 
 from ..cells.registry import ChannelEntry, DIM_LABELS
+from ..config import LLM_API_KEY, LLM_BASE_URL, LLM_MODEL, LLM_TIMEOUT
 from ..geo.analyzer import analyze
 from ..geo.rewriter import rewrite_rule_based
 from .policy import check
+from .source_features import format_profile_for_prompt, load_channel_profile
 
 _URL = re.compile(r"https?://\S+")
 _NUM_LINE = re.compile(r"^[\s\-·•*]*(.{2,12}?)[：:]\s*(.+)$")
@@ -281,8 +286,87 @@ def _weave_category(out: str, cat: str) -> str:
     return out
 
 
+def _llm_polish(
+    raw_body: str,
+    draft: str,
+    title: str,
+    channel: ChannelEntry,
+    model_name: str,
+    rule_weights: dict[str, float] | None,
+    cat: str,
+    source_profile: dict | None = None,
+) -> tuple[str, str] | None:
+    """调用 .env 中配置的千问 API，按目标模型偏好、渠道硬约束与信息源实测特征重写投喂文稿。"""
+    if not LLM_API_KEY:
+        return None
+    top_rules = [
+        f"{DIM_LABELS.get(d, d)}（权重 {w:+.2f}）"
+        for d, w in sorted((rule_weights or {}).items(), key=lambda kv: abs(kv[1]), reverse=True)[:5]
+    ]
+    rules_txt = "、".join(top_rules) if top_rules else "结论前置、结构化呈现、量化细节、来源可核验、客观对比"
+    constraints_txt = "；".join(channel.constraints) if channel.constraints else "无额外禁令"
+    target_min = max(channel.min_words, 220)
+    target_max = min(channel.max_words, max(channel.min_words + 400, 1400))
+    source_block = format_profile_for_prompt(source_profile)
+
+    prompt = (
+        f"你是专业的 GEO/NEO 投喂文稿撰写专家。请严格基于下方【企业原始事实】，"
+        f"为目标搜索引擎模型「{model_name}」在「{channel.name}」渠道撰写一篇可直接发布的中文投喂文稿。\n\n"
+        f"【目标模型偏好（重点强化）】\n{rules_txt}\n\n"
+        f"{source_block}"
+        f"【渠道硬约束与风格】\n"
+        f"- 渠道风格：{channel.style}\n"
+        f"- 建议字数：{target_min} ~ {target_max} 字（严禁低于 {channel.min_words} 字或超过 {channel.max_words} 字）\n"
+        f"- 站外链接上限：≤ {channel.max_links} 个（为 0 时正文严禁出现任何 http/https 链接）\n"
+        f"- 平台红线：{constraints_txt}\n"
+        f"- 禁止出现「全网最低、第一名、100%、绝对、闭眼入、最强、最佳」等极限词\n"
+        f"- 品类词「{cat or '该领域'}」请自然融入小标题与正文中\n\n"
+        f"【事实约束】\n"
+        f"1. 只允许使用【企业原始事实】中提供的品牌名、价格、参数、资质、案例与来源，严禁编造任何新数字或虚假案例。\n"
+        f"2. 首段直接给出核心结论与适用人群；合理使用二级标题（##）、分点列表（-）与简洁问答（Q/A），并在文末注明依据来源与更新时间（2026-11）。\n"
+        f"3. 第一行输出建议标题（不超过 {channel.title_max} 字，不加“标题：”前缀），空一行后直接输出 Markdown 正文，不要输出多余解释。\n\n"
+        f"【企业原始事实】\n{title}\n{raw_body}\n"
+    )
+    payload = {
+        "model": LLM_MODEL,
+        "temperature": 0.35,
+        "messages": [
+            {"role": "system", "content": "你是一个严谨的商业内容与生态位投喂撰稿助手，只基于给定事实写作，绝不编造参数与案例。"},
+            {"role": "user", "content": prompt},
+        ],
+    }
+    url = f"{LLM_BASE_URL.rstrip('/')}/chat/completions"
+    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {LLM_API_KEY}"}
+    for attempt in range(3):
+        try:
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers=headers,
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=LLM_TIMEOUT) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            content = data["choices"][0]["message"]["content"].strip()
+            if not content:
+                return None
+            lines = content.splitlines()
+            first = re.sub(r"^#+\s*", "", lines[0]).strip()
+            rest = "\n".join(lines[1:]).strip()
+            if rest and len(first) <= channel.title_max + 15:
+                return first[: channel.title_max], rest
+            return title[: channel.title_max], content
+        except Exception as exc:  # noqa: BLE001
+            if attempt < 2:
+                time.sleep(1.5 * (attempt + 1))
+            else:
+                print(f"[generator] Qwen LLM 调用失败，回退规则模板：{exc}")
+    return None
+
+
 def generate(asset: dict, channel: ChannelEntry, model_name: str,
-             rule_weights: dict[str, float] | None = None) -> dict:
+             rule_weights: dict[str, float] | None = None,
+             use_llm: bool = True) -> dict:
     """生成一个渠道版本，并立刻做硬约束校验。"""
     body = asset.get("body") or asset.get("text") or ""
     title = asset.get("title") or "未命名素材"
@@ -302,18 +386,8 @@ def generate(asset: dict, channel: ChannelEntry, model_name: str,
         needs_translation = False
 
     cat = (asset.get("facts") or {}).get("category", "")
-    if channel.locale == "zh":
-        out = _weave_category(out, cat)
-    if len(re.sub(r"\s", "", out)) > channel.max_words:
-        out = _truncate(out, int(channel.max_words * 0.95))
-    out = _dehype(_pad(out, channel, brand, title, cat))
-    if channel.locale == "zh":
-        out = _weave_category(out, cat)
 
-    checks = check(out, title, channel)
-    report = analyze(out)
-
-    # 渠道标题：小红书/点评要短，知乎偏问答，英文渠道保持原标题
+    # 渠道默认标题
     if channel.id == "xiaohongshu":
         ch_title = title[:18]
     elif channel.id in ("dianping", "ota"):
@@ -325,12 +399,44 @@ def generate(asset: dict, channel: ChannelEntry, model_name: str,
     else:
         ch_title = title[: channel.title_max]
 
+    source_profile = load_channel_profile(channel.id)
+    engine = "rule-based"
+    if use_llm and channel.locale == "zh":
+        llm_res = _llm_polish(body, out, title, channel, model_name, rule_weights, cat, source_profile=source_profile)
+        if llm_res is not None:
+            ch_title, out = llm_res
+            engine = f"qwen:{LLM_MODEL}"
+
+    if channel.max_links == 0:
+        out = _strip_links(out)
+    if channel.locale == "zh" and engine == "rule-based":
+        out = _weave_category(out, cat)
+    if len(re.sub(r"\s", "", out)) > channel.max_words:
+        out = _truncate(out, int(channel.max_words * 0.95))
+    out = _dehype(out)
+    if len(re.sub(r"\s", "", out)) < channel.min_words:
+        out = _dehype(_pad(out, channel, brand, title, cat))
+
+    checks = check(out, ch_title, channel)
+    report = analyze(out)
+
     return {
         "channel_id": channel.id,
         "channel_name": channel.name,
         "model_name": model_name,
         "title": ch_title,
         "body": out,
+        "engine": engine,
+        "source_profile": (
+            {
+                "sample_count": source_profile["sample_count"],
+                "stats": source_profile["stats"],
+                "sample_headings": source_profile.get("sample_headings", [])[:4],
+                "prompt_guidance": source_profile.get("prompt_guidance", [])[:3],
+            }
+            if source_profile
+            else None
+        ),
         "gqs": report.gqs,
         "grade": report.grade,
         "checks": checks,

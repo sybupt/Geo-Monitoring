@@ -70,6 +70,13 @@ MODELS: tuple[ModelEntry, ...] = (
         note="中文技术问答偏强，偏好结构化与术语定义",
     ),
     ModelEntry(
+        id="qwen_web", name="通义千问 联网", vendor="阿里云", region="cn",
+        retrieval=True, api_style="openai", locale="zh",
+        prior={"conclusion_first": 0.9, "quantified": 0.9, "structured": 0.8, "has_faq": 0.7,
+               "sourced": 0.7, "atomic": 0.7, "no_hype": 0.6},
+        note="中文综合检索均衡，偏好结论前置、量化参数与清晰分点问答",
+    ),
+    ModelEntry(
         id="doubao_web", name="豆包", vendor="字节跳动", region="cn",
         retrieval=True, api_style="openai", locale="zh",
         prior={"conclusion_first": 1.0, "faq": 0.0, "has_faq": 0.8, "atomic": 0.7,

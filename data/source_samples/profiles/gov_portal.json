@@ -1,0 +1,108 @@
+{
+  "channel_id": "gov_portal",
+  "updated_at": "2026-11-21 09:54 UTC",
+  "sample_count": 6,
+  "stats": {
+    "avg_chars": 1006.8,
+    "avg_title_len": 18.8,
+    "avg_para_count": 24.3,
+    "avg_para_len": 43.1,
+    "avg_headings": 8.0,
+    "avg_list_items": 7.3,
+    "table_ratio": 0.33,
+    "jsonld_ratio": 0.0,
+    "faq_ratio": 0.0,
+    "numbers_per_1k": 60.0,
+    "avg_gqs": 55.8
+  },
+  "geo_avg_scores": {
+    "conclusion_first": 0.35,
+    "structured": 0.41,
+    "quantified": 0.38,
+    "sourced": 0.13,
+    "atomic": 1.0,
+    "no_hype": 1.0,
+    "self_contained": 0.89,
+    "term_defined": 0.87,
+    "timeliness": 0.47,
+    "balanced": 0.22
+  },
+  "sample_headings": [
+    "上海自然博物馆",
+    "开放时间",
+    "交通信息",
+    "参观票价目表",
+    "四维影院票价:30元/人",
+    "参观须知",
+    "寒武纪大爆发（4D影片） 需预约",
+    "不朽的旋律——Hi-Fi古典盛宴 聆听舒曼的激情与幻梦 需预约"
+  ],
+  "sample_openings": [
+    "9:00-17:00（16:00停止入馆）（周二休馆，国定假日除外）。",
+    "活动时间：2026年11月24日10:30/13:00/14:00/15:00/16:00/18:30",
+    "弗朗西斯·哈尔岑获2026年诺贝尔物理学奖"
+  ],
+  "prompt_guidance": [
+    "参考该渠道实采 6 篇代表性网页：平均正文约 1006 字，平均每段 43 字（共约 24 段）",
+    "标题长度约 18 字，正文平均包含 8.0 个小标题、7.3 条列表项",
+    "量化信息密度约 60.0 个数字/千字；表格出现率 33%，结构化 JSON-LD 覆盖率 0%",
+    "该站点常见小标题风格示例：「上海自然博物馆」 / 「开放时间」 / 「交通信息」 / 「参观票价目表」",
+    "该站点首段常见开篇节奏示例：「9:00-17:00（16:00停止入馆）（周二休馆，国定假日除外）。…」"
+  ],
+  "samples": [
+    {
+      "file": "19062749511cd2ccda94.html",
+      "url": "https://www.snhm.org.cn/cgfw/cgzx.htm",
+      "title": "参观咨询",
+      "char_count": 1435,
+      "heading_count": 16,
+      "list_item_count": 8,
+      "gqs": 58.6
+    },
+    {
+      "file": "53f497dd77d13e3ae974.html",
+      "url": "https://bjlib.clcn.net.cn/activity/default/index?page=2",
+      "title": "交响乐里的“中国精神”（六） ——《舫的故事》_Hi-Fi打开耳朵_北京城市图书馆",
+      "char_count": 1252,
+      "heading_count": 13,
+      "list_item_count": 0,
+      "gqs": 58.8
+    },
+    {
+      "file": "59645015a1f0e05c003e.html",
+      "url": "http://intl.ce.cn/qqss/202610/t20261006_3248423.shtml",
+      "title": "弗朗西斯·哈尔岑获2026年诺贝尔物理学奖_中国经济网——国家经济门户",
+      "char_count": 185,
+      "heading_count": 1,
+      "list_item_count": 0,
+      "gqs": 53.5
+    },
+    {
+      "file": "9d8fd5017950d62902d2.html",
+      "url": "https://ex.chinadaily.com.cn/exchange/partners/82/rss/channel/cn/columns/sz8srm/stories/WS6336a2e3a310817f312f0a47.html",
+      "title": "巨量本地推-由海量到精准，帮助生活服务商家高效获客",
+      "char_count": 1538,
+      "heading_count": 1,
+      "list_item_count": 20,
+      "gqs": 65.2
+    },
+    {
+      "file": "c3b18b1151bba1442a80.html",
+      "url": "https://nao.snhm.org.cn/foreign/cgfw/cgzx.htm",
+      "title": "参观咨询",
+      "char_count": 1510,
+      "heading_count": 16,
+      "list_item_count": 8,
+      "gqs": 58.6
+    },
+    {
+      "file": "d5586390151854abdf4b.html",
+      "url": "https://www.snhm.org.cn/cgfw/wssp.htm",
+      "title": "网上售票",
+      "char_count": 121,
+      "heading_count": 1,
+      "list_item_count": 8,
+      "gqs": 39.8
+    }
+  ]
+}

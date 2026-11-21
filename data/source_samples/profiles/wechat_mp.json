@@ -1,0 +1,54 @@
+{
+  "channel_id": "wechat_mp",
+  "updated_at": "2026-11-21 09:55 UTC",
+  "sample_count": 1,
+  "stats": {
+    "avg_chars": 998.0,
+    "avg_title_len": 0.0,
+    "avg_para_count": 33.0,
+    "avg_para_len": 30.2,
+    "avg_headings": 1.0,
+    "avg_list_items": 0.0,
+    "table_ratio": 0.0,
+    "jsonld_ratio": 0.0,
+    "faq_ratio": 0.0,
+    "numbers_per_1k": 33.1,
+    "avg_gqs": 66.7
+  },
+  "geo_avg_scores": {
+    "conclusion_first": 0.35,
+    "structured": 0.64,
+    "quantified": 0.66,
+    "sourced": 0.05,
+    "atomic": 1.0,
+    "no_hype": 0.82,
+    "self_contained": 1.0,
+    "term_defined": 1.0,
+    "timeliness": 1.0,
+    "balanced": 0.55
+  },
+  "sample_headings": [
+    "活动预告丨故宫以东•书香之旅 2026年第十一站：做書（隆福寺店）"
+  ],
+  "sample_openings": [
+    "跟着东图到做書书店挑书去！"
+  ],
+  "prompt_guidance": [
+    "参考该渠道实采 1 篇代表性网页：平均正文约 998 字，平均每段 30 字（共约 33 段）",
+    "标题长度约 0 字，正文平均包含 1.0 个小标题、0.0 条列表项",
+    "量化信息密度约 33.1 个数字/千字；表格出现率 0%，结构化 JSON-LD 覆盖率 0%",
+    "该站点常见小标题风格示例：「活动预告丨故宫以东•书香之旅 2026年第十一站」",
+    "该站点首段常见开篇节奏示例：「跟着东图到做書书店挑书去！…」"
+  ],
+  "samples": [
+    {
+      "file": "8423b9ab9e639efa6922.html",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzA3MTE5NzIxMw%3D%3D&mid=2649885359&idx=1&sn=a54eb4a077bd512eeed4a301725eb8d2&chksm=863535a494ebb14208e08b00f6f23f1a282177d5373cf685456af1ac0c09dc68f14261b9feeb&scene=27",
+      "title": "",
+      "char_count": 998,
+      "heading_count": 1,
+      "list_item_count": 0,
+      "gqs": 66.7
+    }
+  ]
+}

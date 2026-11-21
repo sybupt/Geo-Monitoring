@@ -19,6 +19,22 @@ const OptimizeView = (() => {
     if (copyBtn) {
       const ta = G.$(`#doc-${copyBtn.dataset.copy}`);
       navigator.clipboard.writeText(ta.value).then(() => { copyBtn.textContent = "已复制"; });
+      return;
+    }
+    const pvBtn = ev.target.closest("[data-pv]");
+    if (pvBtn) {
+      const vid = pvBtn.dataset.pv;
+      const it = st.result && st.result.items.find((x) => String(x.variant_id) === String(vid));
+      const ta = G.$(`#doc-${vid}`);
+      const titleEl = G.$(`#title-${vid}`);
+      G.openPreview({
+        title: titleEl ? titleEl.textContent : (it ? it.title : ""),
+        body: ta ? ta.value : (it ? it.body : ""),
+        channel: it ? it.channel_name : "",
+        model: it ? it.model_name : "",
+        score: it ? it.after.score : null,
+        checks: it ? it.checks : null,
+      });
     }
   }
 
@@ -116,6 +132,12 @@ const OptimizeView = (() => {
             <div class="sub-title">命中的规则权重</div>
             <div class="chips">${(it.applied_rules || []).map((r) =>
               `<span class="chip">${G.esc(r.label)} ${r.weight > 0 ? "+" : ""}${r.weight}</span>`).join("") || '<span class="note">—</span>'}</div>
+            ${it.source_profile ? `
+              <div class="sub-title">参考的信息源网站实测特征（${it.source_profile.sample_count} 篇实采 HTML）</div>
+              <div class="rule-note" style="margin-bottom:6px">
+                均长 ${Math.round(it.source_profile.stats.avg_chars)} 字 · 均段长 ${Math.round(it.source_profile.stats.avg_para_len)} 字 ·
+                小标题 ${it.source_profile.stats.avg_headings} 个 · 数据密度 ${it.source_profile.stats.numbers_per_1k}/千字
+              </div>` : ""}
             <div class="sub-title">硬约束校验</div>
             <div id="checks-${it.variant_id}">
               ${it.checks.passed
@@ -128,7 +150,10 @@ const OptimizeView = (() => {
           <div>
             <div class="doc-head">
               <b id="title-${it.variant_id}">${G.esc(it.title)}</b>
-              <button class="btn ghost" data-copy="${it.variant_id}">复制正文</button>
+              <div class="toolbar" style="gap:6px">
+                <button class="btn ghost" type="button" data-pv="${it.variant_id}">预览排版</button>
+                <button class="btn ghost" type="button" data-copy="${it.variant_id}">复制正文</button>
+              </div>
             </div>
             <textarea class="wiz-input" id="doc-${it.variant_id}"
               style="min-height:260px;font:12px/1.7 var(--mono, monospace)"

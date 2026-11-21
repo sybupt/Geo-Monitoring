@@ -1,0 +1,71 @@
+{
+  "channel_id": "ota",
+  "updated_at": "2026-11-21 09:55 UTC",
+  "sample_count": 2,
+  "stats": {
+    "avg_chars": 1988.5,
+    "avg_title_len": 57.0,
+    "avg_para_count": 34.5,
+    "avg_para_len": 44.9,
+    "avg_headings": 16.5,
+    "avg_list_items": 72.0,
+    "table_ratio": 0.5,
+    "jsonld_ratio": 0.5,
+    "faq_ratio": 0.0,
+    "numbers_per_1k": 27.1,
+    "avg_gqs": 49.1
+  },
+  "geo_avg_scores": {
+    "conclusion_first": 0.35,
+    "structured": 0.35,
+    "quantified": 0.38,
+    "sourced": 0.05,
+    "atomic": 0.82,
+    "no_hype": 0.97,
+    "self_contained": 0.84,
+    "term_defined": 0.82,
+    "timeliness": 0.2,
+    "balanced": 0.15
+  },
+  "sample_headings": [
+    "Bambu Lab A1 mini 3D Printer",
+    "Payment",
+    "Bambu Lab A1 mini Combo",
+    "Multi-Color Printing",
+    "Active Flow Rate Compensation",
+    "Full Auto Calibration",
+    "TG032",
+    "һڼҴ ӵĻ۹һҪ"
+  ],
+  "sample_openings": [
+    "Multi-material, made easy. The all-new Bambu Lab H3C is launching. → Shop now",
+    "һܶСڼҿдҵѡһõĻ۵ƻǺҪģ۵ƵĿԹעŷƷбϡʱػݣ199Ԫ֣۸ʡŷգOPPLEAAA۵ƹAALED [ Ķȫ ]"
+  ],
+  "prompt_guidance": [
+    "参考该渠道实采 2 篇代表性网页：平均正文约 1988 字，平均每段 44 字（共约 34 段）",
+    "标题长度约 57 字，正文平均包含 16.5 个小标题、72.0 条列表项",
+    "量化信息密度约 27.1 个数字/千字；表格出现率 50%，结构化 JSON-LD 覆盖率 50%",
+    "该站点常见小标题风格示例：「Bambu Lab A1 mini 3D Pri」 / 「Payment」 / 「Bambu Lab A1 mini Combo」 / 「Multi-Color Printing」",
+    "该站点首段常见开篇节奏示例：「Multi-material, made easy. The all-new Bambu Lab H3C is launching. → Shop n…」"
+  ],
+  "samples": [
+    {
+      "file": "1ef75da3fbc9accd6a17.html",
+      "url": "https://us.store.bambulab.com/products/a1-mini?variant=41513493627016&sv1=affiliate&sv_campaign_id=423585&sscid=46345_1759156510_18e61e6c0ce809ed4108933aea991e2b&awc=46345_1759156510_18e61e6c0ce809ed4108933aea991e2b&sscid=46345_1759156510_18e61e6c0ce809ed4108933aea991e2b",
+      "title": "Buy Bambu Lab A1 mini: Compact Multi-Color 3D Printer for Beginners | Bambu Lab ",
+      "char_count": 3827,
+      "heading_count": 15,
+      "list_item_count": 32,
+      "gqs": 58.0
+    },
+    {
+      "file": "d76c1f5d0a5dba51cf0e.html",
+      "url": "https://detail.zol.com.cn/reading-lamp/index1379689.shtml",
+      "title": "TG032__ͼƬ_̳_ TG032̨Ʊ-ZOLйش",
+      "char_count": 150,
+      "heading_count": 18,
+      "list_item_count": 112,
+      "gqs": 40.2
+    }
+  ]
+}

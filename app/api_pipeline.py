@@ -19,7 +19,7 @@ from pydantic import BaseModel
 
 from .cells import registry, store
 from .db import get_item
-from .distribute import generator, policy, scoring
+from .distribute import generator, policy, scoring, source_features
 from .feed import plan as feed_plan
 from .geo import learn
 from .monitor import attribution, probe
@@ -720,6 +720,8 @@ def optimize(req: OptimizeReq) -> dict:
                 "style": ch.style, "model_id": model.id, "model_name": model.name,
                 "variant_id": vid, "status": "draft",
                 "title": gen["title"], "body": gen["body"],
+                "engine": gen.get("engine", "rule-based"),
+                "source_profile": gen.get("source_profile"),
                 "checks": gen["checks"], "gqs": gen["gqs"], "grade": gen["grade"],
                 "needs_translation": gen["needs_translation"],
                 "applied_rules": gen["applied_rules"],
@@ -780,6 +782,42 @@ def optimize_variant_approve(variant_id: int) -> dict:
     return {"variant": d, "note": "审核通过，可进入「引导投喂」"}
 
 
+# ------------------------------------------------------ 信息源实采特征 ----
+class SourceFetchReq(BaseModel):
+    channel_id: str
+    url: str
+
+
+@router.get("/sources/profiles")
+def sources_profiles_list() -> dict:
+    profiles = source_features.list_all_profiles()
+    return {"count": len(profiles), "profiles": profiles}
+
+
+@router.get("/sources/profiles/{channel_id}")
+def sources_profile_get(channel_id: str) -> dict:
+    p = source_features.load_channel_profile(channel_id)
+    if not p:
+        return {"channel_id": channel_id, "profile": None}
+    return {"channel_id": channel_id, "profile": p}
+
+
+@router.post("/sources/rebuild")
+def sources_profiles_rebuild() -> dict:
+    profiles = source_features.build_all_profiles()
+    return {"rebuilt": len(profiles), "channels": sorted(profiles.keys())}
+
+
+@router.post("/sources/fetch")
+def sources_fetch_url(req: SourceFetchReq) -> dict:
+    _channel(req.channel_id)
+    try:
+        res = source_features.fetch_url_to_channel(req.channel_id, req.url)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(400, f"拉取信息源样本失败：{exc}") from exc
+    return res
+
+
 # ------------------------------------------------------------ 5. 引导投喂 ----
 @router.get("/feed/plan")
 def feed_plan_get(target_id: str, model_id: str | None = Query(None)) -> dict:
@@ -790,15 +828,17 @@ def feed_plan_get(target_id: str, model_id: str | None = Query(None)) -> dict:
     data = feed_plan.build(item, mem["plan_label"], channels)
 
     # 每个渠道 → 各模型的审核通过版本（第 4 步可选多模型，逐条登记）
-    variants = [v for v in store.list_variants(item["item_id"], 120)
+    variants = [store.get_variant(v["id"]) for v in store.list_variants(item["item_id"], 120)
                 if v["status"] == "approved"]
+    variants = [v for v in variants if v]
     for row in data["items"]:
         cid = row["channel_id"]
         row["approved"] = [{
             "variant_id": v["id"], "model_id": v["model_id"],
             "model_name": (registry.MODEL_BY_ID[v["model_id"]].name
                            if v["model_id"] in registry.MODEL_BY_ID else v["model_id"]),
-            "title": v["title"], "score": v["score"], "at": v["updated_at"] or v["created_at"],
+            "title": v["title"], "body": v["body"], "checks": v["checks"],
+            "score": v["score"], "at": v["updated_at"] or v["created_at"],
         } for v in variants if v["channel_id"] == cid]
         # 兼容旧字段：取第一个已审核版本
         if row["approved"]:

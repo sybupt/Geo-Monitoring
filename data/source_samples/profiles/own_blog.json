@@ -1,0 +1,108 @@
+{
+  "channel_id": "own_blog",
+  "updated_at": "2026-11-21 09:55 UTC",
+  "sample_count": 6,
+  "stats": {
+    "avg_chars": 2022.5,
+    "avg_title_len": 50.2,
+    "avg_para_count": 23.7,
+    "avg_para_len": 93.4,
+    "avg_headings": 12.5,
+    "avg_list_items": 20.2,
+    "table_ratio": 0.33,
+    "jsonld_ratio": 0.0,
+    "faq_ratio": 0.0,
+    "numbers_per_1k": 13.0,
+    "avg_gqs": 46.6
+  },
+  "geo_avg_scores": {
+    "conclusion_first": 0.46,
+    "structured": 0.05,
+    "quantified": 0.11,
+    "sourced": 0.22,
+    "atomic": 0.74,
+    "no_hype": 0.93,
+    "self_contained": 1.0,
+    "term_defined": 0.85,
+    "timeliness": 0.47,
+    "balanced": 0.22
+  },
+  "sample_headings": [
+    "问 快照+ RAID是一个很好的现场备份解决方案吗？ EN",
+    "回答 8",
+    "Server Fault用户",
+    "腾讯云开发者",
+    "热门产品",
+    "热门推荐",
+    "Paperless-ngx 项目部署",
+    "一、功能概览"
+  ],
+  "sample_openings": [
+    "当我同时使用快照和RAID以及btrfs时，我可以想到备份的两个主要原因。(这里的RAID是指RAID1或10)",
+    "典型的 Docker Compose 部署包含以下服务：",
+    "A full sweep of Python releases is here: Python 3.10.22, 3.11.17, 3.12.15, 3.13.16 and 3.14.8 are now available! One las"
+  ],
+  "prompt_guidance": [
+    "参考该渠道实采 6 篇代表性网页：平均正文约 2022 字，平均每段 93 字（共约 23 段）",
+    "标题长度约 50 字，正文平均包含 12.5 个小标题、20.2 条列表项",
+    "量化信息密度约 13.0 个数字/千字；表格出现率 33%，结构化 JSON-LD 覆盖率 0%",
+    "该站点常见小标题风格示例：「问 快照+ RAID是一个很好的现场备份解决方案」 / 「回答 8」 / 「Server Fault用户」 / 「腾讯云开发者」",
+    "该站点首段常见开篇节奏示例：「当我同时使用快照和RAID以及btrfs时，我可以想到备份的两个主要原因。(这里的RAID是指RAID1或10)…」"
+  ],
+  "samples": [
+    {
+      "file": "15ba3ddbe827f9d620fc.html",
+      "url": "https://cloud.tencent.cn/developer/ask/sof/117050085?from=16139",
+      "title": "快照+ RAID是一个很好的现场备份解决方案吗？-腾讯云开发者社区-腾讯云",
+      "char_count": 1243,
+      "heading_count": 7,
+      "list_item_count": 45,
+      "gqs": 52.1
+    },
+    {
+      "file": "487db4b579e0a64c77dd.html",
+      "url": "https://bbs.huaweicloud.com/blogs/524998",
+      "title": "Paperless-ngx 项目部署-云社区-华为云",
+      "char_count": 1082,
+      "heading_count": 35,
+      "list_item_count": 42,
+      "gqs": 70.2
+    },
+    {
+      "file": "59f5caebd3102ba461a0.html",
+      "url": "https://blog.python.org/2026/10/python-31022-31117/?featured_on=pythonbytes",
+      "title": "Python 3.10.22, 3.11.17, 3.12.15, 3.13.16 and 3.14.8 are now available! | Python",
+      "char_count": 3075,
+      "heading_count": 9,
+      "list_item_count": 17,
+      "gqs": 36.9
+    },
+    {
+      "file": "600acab9a967586fa025.html",
+      "url": "https://devguide.python.org/versions/",
+      "title": "Status of Python versions",
+      "char_count": 1413,
+      "heading_count": 5,
+      "list_item_count": 0,
+      "gqs": 43.6
+    },
+    {
+      "file": "65fe24871532120a3ec2.html",
+      "url": "https://blog.python.org/2026/10/python-31022-31117/",
+      "title": "Python 3.10.22, 3.11.17, 3.12.15, 3.13.16 and 3.14.8 are now available! | Python",
+      "char_count": 3075,
+      "heading_count": 9,
+      "list_item_count": 17,
+      "gqs": 36.9
+    },
+    {
+      "file": "d4e26ada24e203d1af99.html",
+      "url": "https://doc.wallabag.org/admin/installation/installation/",
+      "title": "Installation – wallabag documentation",
+      "char_count": 2247,
+      "heading_count": 10,
+      "list_item_count": 0,
+      "gqs": 40.1
+    }
+  ]
+}

@@ -1,0 +1,298 @@
+
+
+
+
+
+ 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>网上售票</title>
+
+<link rel="stylesheet" href="/webpc/style/style.css?v=0605" />
+<link rel="stylesheet" href="/webpc/js/module/Huploadify/Huploadify.css" type="text/css"/>
+<link rel="stylesheet" href="/webpc/js/module/css/common.css" type="text/css"/>
+<link rel="Bookmark"  type="image/x-icon"  href="/favicon.ico"/>
+<link rel="shortcut icon" href="/favicon.ico" />
+<link rel="icon" href="/favicon.ico" type="image/gif"/>
+<script type="text/javascript" src="/webpc/js/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="/webpc/js/jm-1.2.1.js"></script>
+<script type="text/javascript" src="/webpc/js/jquery.easydropdown.js"></script>
+<script type="text/javascript" src="/webpc/js/hash/crypto.js"></script>
+<script type="text/javascript" src="/webpc/js/hash/sm2.js"></script>
+<script type="text/javascript" src="/webpc/js/hash/md5_1.js"></script>
+<script type="text/javascript" src="/webpc/js/hash/hash.js"></script>
+<script type="text/javascript" src="/js/base.htm"></script>
+<script type="text/javascript" src="/webpc/js/hash/jsencrypt.min.js"></script>
+</head>
+<body>
+<div class="top">
+
+<div class="top_t">
+<div class="top_head"><marquee behavior="scroll" scrolldelay="300" scrollamout="20"><li>●馆内瞬时承载量达5700人时启动临时限流预案</li><li>●APP和微信请在来馆前通过官方网站下载</li></marquee></div>
+    	<div class="main hack">
+          <h1 class="logo fl">上海自然博物馆</h1>
+          <div class="top_t_r fr">
+            	<div class="top_t_r_t fr"><span>&nbsp;</span></div>
+                <div class="blank"></div>
+                <div class="Search fr">
+                	<form id="qwjsForm" action="/qwjs.htm" method="post">
+                		<input type="hidden" id="currentpage_qwjs" name="currentpage" value="" >
+                    	<input name="key" type="text" class="Search_text fl" value="搜索" onfocus="if(this.value=='搜索'){this.value='';}" onblur="if(this.value==''){this.value='搜索';}" /><input type="button" class="Search_submit fr" value="" onclick="qwjsSubmit()" />
+                    </form>
+                    <script type="text/javascript">
+                    function qwjsSubmit(){
+                    	$("#currentpage_qwjs").val(1);
+                    	$("#qwjsForm").submit();
+                    }
+                    </script>
+                </div>
+          </div>
+        </div>
+  </div>
+
+<div class="nav"><div class="nav_c main"><a href="/" title="首 页">首 页</a>
+
+    <a title="常设展览" 
+        
+            
+            href='/cszl/zggk.htm'
+        '>
+        常设展览
+    </a>
+
+    <a title="临展电影" 
+        
+            
+            href='/lzdy/lzIndex.htm'
+        '>
+        临展电影
+    </a>
+
+    <a title="教育活动" 
+        
+            
+            href='/jyhd/index.htm'
+        '>
+        教育活动
+    </a>
+
+    <a title="藏品精粹" 
+        
+            
+            href='/cpjc/index.htm'
+        '>
+        藏品精粹
+    </a>
+
+    <a title="参观服务" class="on6"
+        
+            
+            href='/cgfw/cgzx.htm'
+        '>
+        参观服务
+    </a>
+
+    <a title="博物馆之友" 
+        
+            
+            href='/bwgzy/my-account.htm'
+        '>
+        博物馆之友
+    </a>
+
+</div></div>
+
+<div class="cgfw_banner">
+	<div class="cgfw_banner_c"><p>参观服务</p></div>
+	<div class="cgfw_banner_r"></div>
+    <div class="cszr_banner_topbg"></div>
+</div>
+</div>
+<div class="main hack">
+  	<div class="Layout_l fl">
+    
+<div class="Position"><a title="参观服务" href="/cgfw/cgzx.htm">参观服务</a><i><img src="/webpc/images/Position_i.gif" width="4" height="7" /></i><a title="网上售票" class="on" href="">网上售票</a></div>
+        <div class="wssp">
+            <div class="wssp_head">
+                <div class="fl" >
+                    <img src="/webpc/images/cgfw/wssp.jpg"/>
+                </div>
+                <div class="fl tdyy">
+                    <a href="https://ticket.sstm.org.cn/teamadmin/index.html#/login" target="_blank">团队预约</a>
+                </div>
+            </div>
+            <div class="wfss_t">
+            </div>
+        </div>
+    </div>
+    <div class="Layout_r fr">
+
+
+
+<div class="Column">
+
+  
+  
+  
+	<a title="参观咨询"
+	  
+	  href="/cgfw/cgzx.htm"
+	>参观咨询</a>
+  
+
+
+
+  
+  
+  
+	<a title="场馆日历"
+	  
+	  href="/cgfw/cxyy.htm"
+	>场馆日历</a>
+  
+
+
+
+  
+  
+  
+	<a title="网上售票"
+	   class="on6"
+	  href="/cgfw/wssp.htm"
+	>网上售票</a>
+  
+
+
+</div>
+<div class="popup-layer" id ="panda-show">
+    <img src="/webpc/images/panda.jpg" width="200"/>
+    <span class="close-btn">&times;</span>
+</div>
+<style>
+.popup-layer {
+    display: none; /* 默认隐藏 */
+    position: absolute;
+    z-index: 1000;
+    border: 1px solid #ccc;
+    background-color: white;
+    padding: 15px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.close-btn {
+    float: right;
+    cursor: pointer;
+}
+</style>
+
+<script>
+$('#panda-pop').click(function(){
+    $('#panda-show').show();
+});
+$('.close-btn').click(function(){
+    $('#panda-show').hide();
+});
+</script>
+
+
+<script type="text/javascript" src="/webpc/js/banner2.js"></script>
+<div class="rdtj" style="display:none;">
+    <div class="rdtj_t">
+ 	  	热点推荐
+    </div>
+    <div class="rdtj_b">
+    	<ul class="focus_c"></ul>
+    </div>
+  </div>
+
+    </div>
+</div>
+
+<div class="foot">
+	<div class="foot_main hack">
+    	<div class="foot_l fl">
+        	<h5><a href="/gywm/bwgjj.htm" title="关于我们">关于我们</a></h5>
+            <ul>
+            	<li><a href="/gywm/lssy.htm" title="历史溯源">历史溯源</a></li>
+                <li><a href="/gywm/bwgjj.htm" title="博物馆简介">博物馆简介</a></li>
+            </ul>
+        </div>
+        <div class="foot_l2 fl">
+        	<h5><a href="/jyhd/index.htm" title="展览活动">展览活动</a></h5>
+            <ul>
+            	<li><a href="/cszl/virtualRoaming.htm" title="虚拟漫游">虚拟漫游</a></li>
+                <li><a href="/cszl/index.htm" title="楼层导览">楼层导览</a></li>
+                <li><a href="/lzdy/lzIndex.htm" title="临时展览">临时展览</a></li>
+                <li><a href="/lzdy/film.htm" title="四维影院">四维影院</a></li>
+            </ul>
+        </div>
+        <div class="foot_c fl">
+        	<h5>相关链接</h5>
+            <div class="foot_c_b">
+              <select class="dropdown" id="friend-link">
+              	<option value="https://www.sstm.org.cn">上海科技馆</option><option value="https://www.sstm-sam.org.cn/#/home">上海天文馆</option>
+              </select>
+            </div>
+            <div class="foot_c_c">
+              <a href="javascript:MBL.loadWjdc();" title="问卷调查" class="fl">问卷调查<img src="/webpc/images/foot_c_c.png" width="6" height="9" /></a>
+              <a href="javascript:MBL.loadTsjy();" title="投诉建议" class="fr">投诉建议<img src="/webpc/images/foot_c_c.png" width="6" height="9" /></a>
+            </div>
+        </div>
+        <div class="foot_r fr">
+        	<h5>获取更多最新消息</h5>
+            <div class="foot_r_c">
+                <a target="_blank" rel="noopener noreferrer"><img src="/webpc/images/foot_r_c_1.png" width="38" height="37" /></a>
+                <a target="_blank" rel="noopener noreferrer" class="foot_r_c_c"><img src="/webpc/images/foot_r_c_2.png" width="38" height="37" /></a>
+                <a target="_blank" rel="noopener noreferrer"><img src="/webpc/images/foot_r_c_3.png" width="38" height="37" /></a>
+            </div>
+        </div>
+    </div>
+    <div class="foot_b">
+    	<p>访问人数</p>
+        <div class="foot_b_c">
+        	<span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+        </div>
+        <div class="foot_main">
+        	<div style="float:left;width: 350px;"><script type="text/javascript">document.write(unescape("%3Cspan id='_ideConac' %3E%3C/span%3E%3Cscript src='//dcs.conac.cn/js/02/000/0000/40270569/CA020000000402705690005.js' type='text/javascript'%3E%3C/script%3E"));</script></div>
+        	<div style="float:left;margin-top:15px;text-align:right;width:540px;">沪公网安备31011502403657号 沪ICP备05019056号 </div>
+        	<div style="float:left;text-align:right;width:540px;">© 2014 上海自然博物馆 Shanghai Natural History Museum 版权所有 </div>
+        </div>
+    </div>
+    <div style="display:none"><object id="RfidTool"  classid="clsid:B6B60DF9-B6E5-4111-99B0-6A4C4ABEC9F5"></object></div>
+</div>
+<script>
+	// 添加认证图标
+	$(function(){
+		$("#_ideConac").append([
+		  '<a target="_blank" href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=31011502403657">',
+		  '<img src="/webpc/images/policy/a1ba0f22.beian.png" style="height:48px">',
+		  '</a>',
+          '<a style="margin-left: 20px; width: 100px;" target="_blank"><img src="/webpc/images/policy/7eacee0ab2f1c979257e0b75671d8f5b.png"></a>'
+		].join(''));
+		$("a[target='_blank']").each(function(){
+		    if(!$(this).attr("rel")){
+		        $(this).attr("rel","noopener noreferrer");
+		    }
+		});
+	});
+	var _hmt = _hmt || [];
+	(function() {
+	  var hm = document.createElement("script");
+	  hm.src = "https://hm.baidu.com/hm.js?0273088ec7cd7738e3598772b371e40a";
+	  var s = document.getElementsByTagName("script")[0]; 
+	  s.parentNode.insertBefore(hm, s);
+	})();
+</script>
+<script type="text/javascript">
+$(function () {
+    $.get("//" + MBL.apiUrl + "/webn/cgxx/wssp" + MBL.urlSuffix, function (o) {
+        if (o.code != 1 || !o.result || !o.result.description) {
+            return;
+        }
+        $(".wfss_t").html(o.result.description);
+    });
+});
+</script>
+</body>
+</html>

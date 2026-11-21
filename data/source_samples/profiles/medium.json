@@ -1,0 +1,99 @@
+{
+  "channel_id": "medium",
+  "updated_at": "2026-11-21 09:54 UTC",
+  "sample_count": 5,
+  "stats": {
+    "avg_chars": 5638.2,
+    "avg_title_len": 61.0,
+    "avg_para_count": 32.4,
+    "avg_para_len": 148.1,
+    "avg_headings": 17.0,
+    "avg_list_items": 20.6,
+    "table_ratio": 0.4,
+    "jsonld_ratio": 1.0,
+    "faq_ratio": 0.0,
+    "numbers_per_1k": 7.8,
+    "avg_gqs": 42.2
+  },
+  "geo_avg_scores": {
+    "conclusion_first": 0.35,
+    "structured": 0.05,
+    "quantified": 0.16,
+    "sourced": 0.05,
+    "atomic": 0.62,
+    "no_hype": 1.0,
+    "self_contained": 1.0,
+    "term_defined": 0.92,
+    "timeliness": 0.2,
+    "balanced": 0.15
+  },
+  "sample_headings": [
+    "Do-It-Yourself Portable Air Cleaners",
+    "What is CADR?",
+    "Steps to improve the CADR of a DIY Air Cleaner",
+    "Increase the filtration area by using more filters or deeper filters.",
+    "Air Filter Performance",
+    "Do-It-Yourself Instructions",
+    "Nobel Prize",
+    "NOBEL PRIZES 2026"
+  ],
+  "sample_openings": [
+    "There are three main approaches for improving indoor air quality: (i) reducing sources of indoor air pollution, (ii) dil",
+    "Statue of Alfred Nobel.",
+    "Posted on Aug 28 • Originally published at selfhoststack-8z4.pages.dev"
+  ],
+  "prompt_guidance": [
+    "参考该渠道实采 5 篇代表性网页：平均正文约 5638 字，平均每段 148 字（共约 32 段）",
+    "标题长度约 61 字，正文平均包含 17.0 个小标题、20.6 条列表项",
+    "量化信息密度约 7.8 个数字/千字；表格出现率 40%，结构化 JSON-LD 覆盖率 100%",
+    "该站点常见小标题风格示例：「Do-It-Yourself Portable 」 / 「What is CADR?」 / 「Steps to improve the CAD」 / 「Increase the filtration 」",
+    "该站点首段常见开篇节奏示例：「There are three main approaches for improving indoor air quality: (i) reduc…」"
+  ],
+  "samples": [
+    {
+      "file": "28e9f33110e55db4055a.html",
+      "url": "https://healthybuildings.hsph.harvard.edu/diy-air-cleaners/",
+      "title": "Do-It-Yourself Portable Air Cleaners - Healthy Buildings",
+      "char_count": 16345,
+      "heading_count": 16,
+      "list_item_count": 31,
+      "gqs": 42.1
+    },
+    {
+      "file": "48d28eee1e625595aaad.html",
+      "url": "https://www.nobelprize.org/all-nobel-prizes-2026/",
+      "title": "All Nobel Prizes 2026 - NobelPrize.org",
+      "char_count": 4802,
+      "heading_count": 28,
+      "list_item_count": 10,
+      "gqs": 39.3
+    },
+    {
+      "file": "58f4241e43d343e06177.html",
+      "url": "https://dev.to/enfernandes/self-hosted-bookmark-managers-in-2026-linkwarden-vs-shiori-vs-karakeep-vs-hoarder-2m90",
+      "title": "Self-Hosted Bookmark Managers in 2026: Linkwarden vs Shiori vs Karakeep vs Hoard",
+      "char_count": 2349,
+      "heading_count": 10,
+      "list_item_count": 42,
+      "gqs": 44.5
+    },
+    {
+      "file": "61bec6a536fde5cae333.html",
+      "url": "https://www.nobelprize.org/prizes/physics/2026/press-release/",
+      "title": "Press release: Nobel Prize in Physics 2026 - NobelPrize.org",
+      "char_count": 3937,
+      "heading_count": 7,
+      "list_item_count": 0,
+      "gqs": 38.9
+    },
+    {
+      "file": "67a30951a5dbdad14fce.html",
+      "url": "https://datalatte.pro/blog/small-business-marketing-china-2026",
+      "title": "Chinese Digital Marketing Platforms for Small Business",
+      "char_count": 758,
+      "heading_count": 24,
+      "list_item_count": 20,
+      "gqs": 46.2
+    }
+  ]
+}

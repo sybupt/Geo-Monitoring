@@ -1,0 +1,1145 @@
+
+            <!doctype html>
+
+
+<html lang="zh-CN" site="china">
+    <head>
+        <meta charset="UTF-8">
+<meta name="applicable-device" content="pc,mobile">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta name="baidu-site-verification" content="nsMgQr28vc" />
+<meta http-equiv="x-dns-prefetch-control" content="on">
+
+<link  rel="icon" href="/favicon.ico" />
+<link rel="stylesheet" href="https://res-static.hc-cdn.cn/aem/content/dam/cloudbu-site/archive/china/static/v2_resources/css/global.css" />
+<link rel="stylesheet" type="text/css" href="https://res-static.hc-cdn.cn/aem/content/dam/cloudbu-develop/archive/china/zh-cn/developer/developer-page/css/developer-common.css" />
+<script src="https://res-static.hc-cdn.cn/aem/content/dam/cloudbu-develop/archive/china/zh-cn/developer/developer-page/js/jquery.min.js"></script>
+<link rel="canonical" href="https://bbs.huaweicloud.com/blogs/524998"/>
+        <title>Paperless-ngx 项目部署-云社区-华为云</title>
+        <meta name="keywords" content="文件,命令,目录,docker,手动,开发者,云社区,华为云"/>
+        <meta name="description" content=" 一、功能概览类别说明文档入库监控 consume（消费）文件夹、网页上传、邮箱附件自动拉取、手机端第三方应用上传OCR 识别内置 Tesseract，支..."/>
+        <meta name="templateName" content="blogs-detail-pep2.0">
+        <link rel="stylesheet" type="text/css" href="https://res-hd.hc-cdn.cn/ecology/9.3.209/v2_resources/css/prism-tomorrow.css"/>
+        <link rel="stylesheet" type="text/css" href="https://res-hd.hc-cdn.cn/ecology/9.3.209/v2_resources/css/editor-content.css"/>
+        <link rel="stylesheet" type="text/css" href="https://res-hd.hc-cdn.cn/ecology/9.3.209/v2_resources/css/markdown.css"/>
+        <link rel="stylesheet" type="text/css"  href="https://res-static.hc-cdn.cn/aem/content/dam/cloudbu-site/archive/china/static/v2_resources/css/product-icons.css"/>
+        <script src="https://res-static.hc-cdn.cn/aem/content/dam/cloudbu-site/archive/commons/3rdlib/polyfill/polyfill.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="https://res-hd.hc-cdn.cn/ecology/9.3.209/v2_resources/ydcomm/libs/newblog_css/banner.css"/>
+        <link rel="stylesheet" type="text/css" href="https://res-hd.hc-cdn.cn/ecology/9.3.209/v2_resources/ydcomm/libs/newblog_css/blog-detail.css"/>
+        <script src="https://developer.huaweicloud.com/portal-res-static/developer-preload-header.js?url=https://developer.huaweicloud.com/common/hwcheader2023.html"></script>
+        <script src="https://res-static.hc-cdn.cn/aem/content/dam/cloudbu-develop/archive/china/zh-cn/developer/developer-page/js/developer-pep2-template.js"></script>
+        <script>
+            var detailId = '524998',
+            fuxiStatic = 'https://res-hd.hc-cdn.cn/ecology',
+            staticVersion = '9.3.209',
+            wxTitleText = "Paperless-ngx 项目部署",
+            weixinImg = "https://fileserver.developer.huaweicloud.com/FileServer/getFile/community/854/213/874/0001727190854213874.20261110112308.58940088189265733101361276627956:20261118045602:2415:E98482A838560F72CF21497635E9E424F6D4B55EA44D25C874070D1F4A07796A.png",
+            weixinDomain = "https://bbs-img.huaweicloud.com/blogs/img/",
+            obsDomain = "https://bbs-img.huaweicloud.com",
+            // blogs-js.js 的变量
+            blogId = "f40ac4fc8fd448ee826e2b8733e6d0f1",
+            sourceUid  = "5509f4919180416cb66d22fa3304903e",
+            is_lock = "0",
+            bloggerId = "1727190854213874",
+            ssoDomain = "https://auth.huaweicloud.com",
+            bbsDomain = "https://bbs.huaweicloud.com",
+            developerDomain = "https://developer.huaweicloud.com",
+            curBlogTitle = "Paperless-ngx 项目部署",
+            curBlogId = "f40ac4fc8fd448ee826e2b8733e6d0f1",
+            pageNo =  "1",
+            _blogsStatus = parseInt("3"),
+            _isLock = parseInt("0"),
+            _notPassReason = "",
+            devdataDomain = "https://devdata.huaweicloud.com";
+            var blog_attachment_appId = "7243D4285EFB4DC9AEF2E5CC3511AC50";
+            var advUrl = "www.huaweicloud.com/ad/blog_bottom.html";
+            var advId = "pep-ad-img_1664508731473";
+            var tags = "Docker,华为云Flexus云服务,弹性云服务器 ECS,数据库";
+            var blogValue = {
+                blog_id: blogId,
+                tag: tags,
+                title : curBlogTitle,
+            }
+        </script>
+        <style>
+            :not(pre) > code{
+                max-width: 100%;
+            }
+            html {
+                scroll-padding-top: 80px;
+            }
+        </style>
+        <script src="https://res-hd.hc-cdn.cn/eco-devkit-cdn/1.0.48/eco-security.js"></script>
+        <script>
+          EUI.security.startProtection({
+            disableScriptText: false,
+            checkAttrAssignment: false,
+            disableDocumentWrite: false,
+            confirmBeforeRedirect: false,
+            disableTimerText: false,
+            protectJQueryDomApi: false,
+          });
+        </script>
+    </head>
+    <body id="blogs_detial_home_page">
+        <script>
+            !function(x, n) {
+                window[n] = window[n] || {};
+                window[n].config = {
+                    "appId": "65F5EB2606914739A5D5D464DF6DFFB0",
+                    "setting": "perf,jsTrack,api,uba,rtti",
+                    "crossOriginApi": true,
+                    "hashMode": true,
+                    "closeReportFMP": true,
+                    "smartJsErr": true,
+                    "sendResource": true,
+                    "options": {
+                        "api": {
+                        "headers": [
+                            ""
+                        ],
+                        "query": true,
+                        "body": true
+                        },
+                        "whiteScreen": {
+                            "rootElements": [
+                                "html",
+                                "body",
+                                "#app",
+                                "#root"
+                            ]
+                        }
+                    }
+                }
+                var o = document.createElement('script');
+                o.src = x, o.async = !0;
+                var d = document.body.firstChild;
+                document.body.insertBefore(o, d);
+            }('https://res.hc-cdn.com/FurionSdk/furion-cdn.min.js', '__fr');
+        </script> 
+        
+        
+    
+         
+                <script>window.$aioList = [ "" ]; window.$aioCdnPrefix = 'https://res.hc-cdn.com/';</script>
+            
+
+<script>
+    window.gConfig =  window.gConfig || {};
+    window.gConfig.isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    var hClassName;
+    if(window.gConfig.isMobile){
+        hClassName = ' phone';
+    }else{
+        hClassName = ' pc';
+    }
+    if(window.$aioList) {
+        for(var i=0; i<window.$aioList.length; i++) {
+            if(window.$aioCdnPrefix){
+                var cdnprefix = location.host.indexOf('.cn') !== -1 && (window.$aioList[i].indexOf('cnpm-pep-components') !== -1 || window.$aioList[i].indexOf('cnpm-pep-solution-thirdParty') !== -1 || window.$aioList[i].indexOf('cnpm-pep-experience-process') !== -1 || window.$aioList[i].indexOf('cnpm-pep-htmlcomponent') !== -1) ? 'https://portal.hc-cdn.com/' : window.$aioCdnPrefix;
+                if(window.$aioList[i].length>0) {
+                    document.write('<link rel="stylesheet" href="' + cdnprefix + window.$aioList[i]+'/' + (window.gConfig.isMobile?'m':'pc')+'/index.css" />');
+                }
+            } else {
+                if(window.$aioList[i].length>0) {
+                    document.write('<link rel="stylesheet" href="https://res.hc-cdn.com/'+window.$aioList[i]+'/'+(window.gConfig.isMobile?'m':'pc')+'/index.css" />');
+                }
+            }
+        }
+    }
+    var root = document.documentElement;
+    root.className += hClassName ; 
+</script>
+<link rel="stylesheet" type="text/css" href="https://portal.hc-cdn.com/cnpm-baseui/2.8.11/index.css" />
+
+    
+
+
+        <hd-header></hd-header>
+        
+        <div id="content" data-site="china">
+            <div class="message-tip" style="display: none">冒泡提示</div>
+            
+            
+            <div class="main-content main-content-blog-detail">
+                
+<!-- 页签PC&mb start -->
+<ul class="por-breadcrumb">
+  <li class="por-breadcrumb-item">
+      <a class="por-link-blue" href="https://bbs.huaweicloud.com" target="_blank"
+        rel="noopener noreferrer">云社区</a>
+  </li>
+  <li class="por-breadcrumb-item">
+      <a class="por-link-blue" href="https://bbs.huaweicloud.com/blogs" target="_blank"
+        rel="noopener noreferrer">博客</a>
+  </li>
+  <li class="por-breadcrumb-item">
+      <!-- 博客详情标题 -->
+      Paperless-ngx 项目部署
+  </li>
+</ul>
+<!-- 页签PC&mb end -->
+                <div class="tips-wrapper" hidden><div class="page-transit-tips"></div></div>
+                <div class="wrapper-main">
+                    
+<ul class="float-left-lists">
+  <li id="float-comment" mate_data_ts="bbs_blogdetail_comment.click.Paperless-ngx 项目部署" class="list-item item-comment"><i class="icon-float-list icon-float-comment"></i></li>
+  <li id="float-vote" mate_data_ts="bbs_blogdetail_like.click.Paperless-ngx 项目部署" class="list-item item-vote"><i class="icon-float-list icon-float-vote"></i></li>
+  <li id="float-like" mate_data_ts="bbs_blogdetail_collect.click.Paperless-ngx 项目部署" class="list-item item-like"><i class="icon-float-list icon-float-like"></i></li>
+  <li id="float-share" class="list-item item-share hasTips">
+      <i class="icon-float-list icon-float-share"></i>
+      <div class="float-tips-block">
+          <ul class="float-share-list">
+              <li class="item-weixin">
+                  <span class="icon-float-share-list icon-share-weixin"></span>
+                  <p class="por-text-caption-t1">微信</p>
+                  <div class="share-tips">
+                    <p class="qrcode-cover weixin-share"></p>
+                  </div>
+              </li>
+              <li class="item-weibo" mate_data_ts="bbs_blogDetail_share.click.weibo_Paperless-ngx 项目部署">
+                <a href="https://service.weibo.com/share/share.php?title=Paperless-ngx 项目部署&nbsp; 一、功能概览类别说明文档入库监控 consume（消费）文件夹、网页上传、邮箱附件自动拉取、手机端第三方应用上传OCR 识别内置 Tess...&url=https://bbs.huaweicloud.com/blogs/524998" target="_blank" rel="noopener noreferrer">
+                  <span class="icon-float-share-list icon-share-weibo"></span>
+                  <p class="por-text-caption-t1">微博</p>
+                  <div class="share-tips">
+                    <p class="weibo-share">分享文章到微博</p>
+                  </div>
+                </a>
+              </li>
+              <li class="item-link" mate_data_ts="bbs_blogDetail_share.click.link_Paperless-ngx 项目部署">
+                    <span class="icon-float-share-list icon-share-link"></span>
+                    <p class="por-text-caption-t1">复制链接</p>
+                    <div class="share-tips">
+                        <p class="link-share">复制链接到剪贴板</p>
+                    </div>
+              </li>
+          </ul>
+      </div>
+  </li>
+</ul>
+                    <div class="cloud-blog-detail-left">
+                        
+
+<div class="blog-content-body">
+    <!-- 博客标题 -->
+    <h1 class="cloud-blog-detail-title">Paperless-ngx 项目部署</h1>
+    <!-- 博主博客信息PC&mb start -->
+    <div class="common-blog-icons common-blog-icons-cloud-blog">
+        <div id="report_btn" class="report-btn" data-type="1">举报</div>
+        <div class="m-author-min-head color_text_weaken_dark">
+            <a href="/community/usersnew/id_1727190854213874" class="author-min-head target_self" target="_blank" rel="noopener noreferrer">
+                <img id="headImg" referrerpolicy="no-referrer" class="authorImg currentImg" path="https://res.hc-cdn.com/ecology/5.12.102/v2_resources/ydcomm/images/default_user.png" src="https://res.hc-cdn.com/ecology/5.12.102/v2_resources/ydcomm/images/default_user.png">
+            </a>
+            <a class="sub-content-username por-link-red" href="/community/usersnew/id_1727190854213874" target="_blank" rel="noopener noreferrer">yd_229065422</a>
+            <span class="article-write-time isPc"> 发表于 2026/11/10 19:23:26</span>
+            <span class="article-write-time isMb">2026/11/10</span>
+        </div>
+        <div class="m-blog-view-info color_text_weaken_dark">
+            <i class="icon-view"></i>
+            <span class="view-count" data-count="54"></span>
+            <i class="icon-comment"></i>
+            <span class="comment-count" data-count="0"></span>
+            <i class="icon-vote"></i>
+            <span class="vote-count" data-count="0"></span>
+        </div>
+        <div id="edit_delete"></div>
+    </div>
+    <!-- 博主博客信息PC&mb end -->
+    <!-- 博客摘要 start -->
+    <div class="cloud-blog-detail-summary ">
+        【摘要】  一、功能概览类别说明文档入库监控 consume（消费）文件夹、网页上传、邮箱附件自动拉取、手机端第三方应用上传OCR 识别内置 Tesseract，支持多语言，包含简体中文；对扫描件生成可搜索的 PDF/A 存档版本全文搜索对所有文档内容进行全文检索，支持相关文档推荐自动分类通过标签、通信方（Correspondent）、文档类型、存储路径整理文档，支持自动匹配与机器学习分类工作流根据触...
+    </div>
+    <!-- 博客摘要 end -->
+
+    <!-- 博客正文内容 start -->
+    <div class="cloud-blog-detail-content-wrap">
+        <div class="cloud-blog-detail-content blog-content-block-0" id="blogContent">
+            <div class="markdown-preview"><hr>
+<h2 class="md-h2"><a class="header-anchor" rel="nofollow"></a> 一、功能概览</h2>
+<table>
+<thead>
+<tr>
+<th>类别</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>文档入库</td>
+<td>监控 consume（消费）文件夹、网页上传、邮箱附件自动拉取、手机端第三方应用上传</td>
+</tr>
+<tr>
+<td>OCR 识别</td>
+<td>内置 Tesseract，支持多语言，包含简体中文；对扫描件生成可搜索的 PDF/A 存档版本</td>
+</tr>
+<tr>
+<td>全文搜索</td>
+<td>对所有文档内容进行全文检索，支持相关文档推荐</td>
+</tr>
+<tr>
+<td>自动分类</td>
+<td>通过标签、通信方（Correspondent）、文档类型、存储路径整理文档，支持自动匹配与机器学习分类</td>
+</tr>
+<tr>
+<td>工作流</td>
+<td>根据触发条件（入库、添加、更新、定时）自动执行分配标签、修改字段、发送通知等操作</td>
+</tr>
+<tr>
+<td>自定义字段</td>
+<td>给文档添加金额、日期、链接等自定义元数据</td>
+</tr>
+<tr>
+<td>多用户与权限</td>
+<td>多用户、用户组、文档级权限、分享链接</td>
+</tr>
+<tr>
+<td>数据可移植</td>
+<td>原始文件按文件夹保存，并提供导出与导入工具，不被锁定</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 class="md-h2"><a class="header-anchor" rel="nofollow"></a> 二、部署架构</h2>
+<p>典型的 Docker Compose 部署包含以下服务：</p>
+<table>
+<thead>
+<tr>
+<th>服务</th>
+<th>作用</th>
+<th>是否必需</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>webserver</td>
+<td>Paperless-ngx 主服务：网页、接口、后台任务消费</td>
+<td>必需</td>
+</tr>
+<tr>
+<td>broker</td>
+<td>Redis，任务队列</td>
+<td>必需</td>
+</tr>
+<tr>
+<td>db</td>
+<td>PostgreSQL 数据库（官方推荐用于生产）</td>
+<td>推荐</td>
+</tr>
+<tr>
+<td>gotenberg</td>
+<td>将 Office 文档、邮件转为 PDF</td>
+<td>需要处理 Office 或邮件时</td>
+</tr>
+<tr>
+<td>tika</td>
+<td>解析 Office 文档内容</td>
+<td>与 gotenberg 配套使用</td>
+</tr>
+</tbody>
+</table>
+<p>默认也可使用内置 SQLite，仅适合试用或极小规模，正式使用建议 PostgreSQL。</p>
+<hr>
+<h2 class="md-h2"><a class="header-anchor" rel="nofollow"></a> 三、环境要求</h2>
+<ul>
+<li>Linux 服务器、NAS 或家用主机，Docker Engine 与 Docker Compose 插件</li>
+<li>内存：2GB 起步，建议 4GB 以上（OCR 与并发任务占用较多资源）</li>
+<li>磁盘：为文档库预留充足空间，扫描件和 PDF 会占用不少容量</li>
+<li>CPU：OCR 是 CPU 密集型任务，核心数越多处理越快</li>
+<li>默认端口：8000</li>
+</ul>
+<hr>
+<h2 class="md-h2"><a class="header-anchor" rel="nofollow"></a> 四、Docker Compose 部署</h2>
+<h3 class="md-h3"><a class="header-anchor" rel="nofollow"></a> 4.1 创建目录</h3>
+<p>提前创建 consume 与 export 目录，避免 Docker 自动创建出 root 所属的目录而产生权限问题：</p>
+<pre class="language-bash codetheme-tomorrownight"><code class="language-bash codetheme-tomorrownight"><span class="token function">mkdir</span> <span class="token parameter variable">-p</span> ~/paperless-ngx/<span class="token punctuation">{</span>consume,export<span class="token punctuation">}</span>
+<span class="token builtin class-name">cd</span> ~/paperless-ngx
+</code></pre>
+<h3 class="md-h3"><a class="header-anchor" rel="nofollow"></a> 4.2 获取当前用户 ID</h3>
+<pre class="language-bash codetheme-tomorrownight"><code class="language-bash codetheme-tomorrownight"><span class="token function">id</span> <span class="token parameter variable">-u</span>
+<span class="token function">id</span> <span class="token parameter variable">-g</span>
+</code></pre>
+<p>记下输出，下面填入 <code>USERMAP_UID</code> 与 <code>USERMAP_GID</code>，使容器内用户与宿主机用户一致，避免 consume 目录权限问题。</p>
+<h3 class="md-h3"><a class="header-anchor" rel="nofollow"></a> 4.3 生成密钥</h3>
+<pre class="language-bash codetheme-tomorrownight"><code class="language-bash codetheme-tomorrownight">openssl rand <span class="token parameter variable">-base64</span> <span class="token number">64</span> <span class="token operator">|</span> <span class="token function">tr</span> <span class="token parameter variable">-d</span> <span class="token string">'\n'</span>
+</code></pre>
+<p>把输出作为 <code>PAPERLESS_SECRET_KEY</code>。密钥用于加密签名，请保密，并且部署后不要随意更换。</p>
+<h3 class="md-h3"><a class="header-anchor" rel="nofollow"></a> 4.4 编写 docker-compose.yml</h3>
+<p>下面是基础版（Paperless + PostgreSQL + Redis），可直接作为起点：</p>
+<pre class="language-yaml codetheme-tomorrownight"><code class="language-yaml codetheme-tomorrownight"><span class="token key atrule">services</span><span class="token punctuation">:</span>
+  <span class="token key atrule">broker</span><span class="token punctuation">:</span>
+    <span class="token key atrule">image</span><span class="token punctuation">:</span> redis<span class="token punctuation">:</span><span class="token number">7</span>
+    <span class="token key atrule">restart</span><span class="token punctuation">:</span> unless<span class="token punctuation">-</span>stopped
+    <span class="token key atrule">volumes</span><span class="token punctuation">:</span>
+      <span class="token punctuation">-</span> redisdata<span class="token punctuation">:</span>/data
+
+  <span class="token key atrule">db</span><span class="token punctuation">:</span>
+    <span class="token key atrule">image</span><span class="token punctuation">:</span> postgres<span class="token punctuation">:</span><span class="token number">16</span>
+    <span class="token key atrule">restart</span><span class="token punctuation">:</span> unless<span class="token punctuation">-</span>stopped
+    <span class="token key atrule">volumes</span><span class="token punctuation">:</span>
+      <span class="token punctuation">-</span> pgdata<span class="token punctuation">:</span>/var/lib/postgresql/data
+    <span class="token key atrule">environment</span><span class="token punctuation">:</span>
+      <span class="token key atrule">POSTGRES_DB</span><span class="token punctuation">:</span> paperless
+      <span class="token key atrule">POSTGRES_USER</span><span class="token punctuation">:</span> paperless
+      <span class="token key atrule">POSTGRES_PASSWORD</span><span class="token punctuation">:</span> 请替换为强密码
+
+  <span class="token key atrule">webserver</span><span class="token punctuation">:</span>
+    <span class="token key atrule">image</span><span class="token punctuation">:</span> ghcr.io/paperless<span class="token punctuation">-</span>ngx/paperless<span class="token punctuation">-</span>ngx<span class="token punctuation">:</span>latest
+    <span class="token key atrule">restart</span><span class="token punctuation">:</span> unless<span class="token punctuation">-</span>stopped
+    <span class="token key atrule">depends_on</span><span class="token punctuation">:</span>
+      <span class="token punctuation">-</span> db
+      <span class="token punctuation">-</span> broker
+    <span class="token key atrule">ports</span><span class="token punctuation">:</span>
+      <span class="token punctuation">-</span> <span class="token string">"8000:8000"</span>
+    <span class="token key atrule">volumes</span><span class="token punctuation">:</span>
+      <span class="token punctuation">-</span> data<span class="token punctuation">:</span>/usr/src/paperless/data
+      <span class="token punctuation">-</span> media<span class="token punctuation">:</span>/usr/src/paperless/media
+      <span class="token punctuation">-</span> ./export<span class="token punctuation">:</span>/usr/src/paperless/export
+      <span class="token punctuation">-</span> ./consume<span class="token punctuation">:</span>/usr/src/paperless/consume
+    <span class="token key atrule">environment</span><span class="token punctuation">:</span>
+      <span class="token key atrule">PAPERLESS_REDIS</span><span class="token punctuation">:</span> redis<span class="token punctuation">:</span>//broker<span class="token punctuation">:</span><span class="token number">6379</span>
+      <span class="token key atrule">PAPERLESS_DBHOST</span><span class="token punctuation">:</span> db
+      <span class="token key atrule">PAPERLESS_DBNAME</span><span class="token punctuation">:</span> paperless
+      <span class="token key atrule">PAPERLESS_DBUSER</span><span class="token punctuation">:</span> paperless
+      <span class="token key atrule">PAPERLESS_DBPASS</span><span class="token punctuation">:</span> 与上面数据库密码一致
+      <span class="token key atrule">PAPERLESS_SECRET_KEY</span><span class="token punctuation">:</span> 填入上一步生成的密钥
+      <span class="token key atrule">PAPERLESS_TIME_ZONE</span><span class="token punctuation">:</span> Asia/Shanghai
+      <span class="token key atrule">PAPERLESS_OCR_LANGUAGE</span><span class="token punctuation">:</span> chi_sim+eng
+      <span class="token key atrule">PAPERLESS_OCR_LANGUAGES</span><span class="token punctuation">:</span> chi<span class="token punctuation">-</span>sim
+      <span class="token key atrule">USERMAP_UID</span><span class="token punctuation">:</span> <span class="token number">1000</span>
+      <span class="token key atrule">USERMAP_GID</span><span class="token punctuation">:</span> <span class="token number">1000</span>
+
+<span class="token key atrule">volumes</span><span class="token punctuation">:</span>
+  <span class="token key atrule">data</span><span class="token punctuation">:</span>
+  <span class="token key atrule">media</span><span class="token punctuation">:</span>
+  <span class="token key atrule">pgdata</span><span class="token punctuation">:</span>
+  <span class="token key atrule">redisdata</span><span class="token punctuation">:</span>
+</code></pre>
+<p>要点说明：</p>
+<ul>
+<li><code>PAPERLESS_OCR_LANGUAGE</code> 是识别时使用的语言，格式为 Tesseract 语言代码，用加号连接，简体中文是 chi_sim，英文是 eng。</li>
+<li><code>PAPERLESS_OCR_LANGUAGES</code> 用于在容器启动时额外安装语言包，格式为带连字符的包名后缀，简体中文是 chi-sim。两者不要混淆。</li>
+<li>配置文件里的 redis 地址是容器之间互相通信用的内部连接串，不是对外链接。</li>
+<li>具体的镜像版本与官方示例可能随版本更新，建议对照官方仓库 docker 目录下的 Compose 示例，并把镜像固定到具体版本号。</li>
+<li>数据库密码、密钥等敏感信息也可以放入单独的 <code>.env</code> 文件，由 Compose 引用，并且不要提交到代码仓库。</li>
+</ul>
+<h3 class="md-h3"><a class="header-anchor" rel="nofollow"></a> 4.5 启动</h3>
+<pre class="language-bash codetheme-tomorrownight"><code class="language-bash codetheme-tomorrownight"><span class="token function">docker</span> compose pull
+<span class="token function">docker</span> compose up <span class="token parameter variable">-d</span>
+<span class="token function">docker</span> compose <span class="token function">ps</span>
+<span class="token function">docker</span> compose logs <span class="token parameter variable">-f</span> webserver
+</code></pre>
+<p>首次启动需要一两分钟初始化数据库。</p>
+<h3 class="md-h3"><a class="header-anchor" rel="nofollow"></a> 4.6 创建管理员</h3>
+<pre class="language-bash codetheme-tomorrownight"><code class="language-bash codetheme-tomorrownight"><span class="token function">docker</span> compose <span class="token builtin class-name">exec</span> webserver createsuperuser
+</code></pre>
+<p>按提示输入用户名、邮箱和密码。也可以通过环境变量 <code>PAPERLESS_ADMIN_USER</code> 与 <code>PAPERLESS_ADMIN_PASSWORD</code> 在首次启动时自动创建，但密码留在配置中有泄露风险，创建完成后建议移除。</p>
+<p>之后用浏览器访问「服务器IP地址:8000」登录。</p>
+<hr>
+<h2 class="md-h2"><a class="header-anchor" rel="nofollow"></a> 五、使用公网域名时的关键配置</h2>
+<p>使用域名并通过反向代理提供 HTTPS 时，务必在环境变量中补充：</p>
+<pre class="language-yaml codetheme-tomorrownight"><code class="language-yaml codetheme-tomorrownight">      <span class="token key atrule">PAPERLESS_URL</span><span class="token punctuation">:</span> https<span class="token punctuation">:</span>//你的域名
+</code></pre>
+<p>说明：</p>
+<ul>
+<li><code>PAPERLESS_URL</code> 必须是用户实际访问的完整地址（含 https）。若 HTTPS 访问而此项设置成 HTTP，分享链接和密码重置流程会出错。</li>
+<li>该变量同时影响跨站请求校验，遇到登录后提示 CSRF 相关错误，优先检查它，必要时补充 <code>PAPERLESS_CSRF_TRUSTED_ORIGINS</code> 与 <code>PAPERLESS_ALLOWED_HOSTS</code>。</li>
+</ul>
+<h3 class="md-h3"><a class="header-anchor" rel="nofollow"></a> 反向代理示例（Caddy）</h3>
+<pre class="language-text codetheme-tomorrownight"><code class="language-text codetheme-tomorrownight">你的域名 {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:8000
+}
+</code></pre>
+<p>若使用 Nginx，请注意：</p>
+<ul>
+<li>需要开启 WebSocket 支持（用于状态实时推送）。</li>
+<li>将 <code>client_max_body_size</code> 调大，否则大文件上传会失败。</li>
+<li>设置较长的读写超时。</li>
+</ul>
+<p>安全建议：端口映射改为只监听本机（<code>127.0.0.1:8000:8000</code>），再由反向代理对外提供 443，避免直接暴露 8000 端口。</p>
+<hr>
+<h2 class="md-h2"><a class="header-anchor" rel="nofollow"></a> 六、文档入库方式</h2>
+<h3 class="md-h3"><a class="header-anchor" rel="nofollow"></a> 6.1 consume 文件夹</h3>
+<p>把文件放进 <code>consume</code> 目录，Paperless 会自动检测并处理。适合配合扫描仪的「扫描到文件夹」功能使用。</p>
+<ul>
+<li>默认会递归处理子目录，可通过环境变量控制行为，并可让子目录名自动成为标签。</li>
+<li>若 consume 目录位于网络共享（NFS、SMB）上，文件系统事件可能不触发，需要启用轮询模式并设置轮询间隔（<code>PAPERLESS_CONSUMER_POLLING</code>）。</li>
+<li>处理完成后原文件会被移除，请把「放入 consume」当作移交，原件另行保留。</li>
+</ul>
+<h3 class="md-h3"><a class="header-anchor" rel="nofollow"></a> 6.2 网页上传</h3>
+<p>登录后直接拖拽文件到网页。</p>
+<h3 class="md-h3"><a class="header-anchor" rel="nofollow"></a> 6.3 邮件入库</h3>
+<p>在「邮件」设置中添加邮箱账户与规则，Paperless 会定期收取并把附件（或邮件本身）转为文档。处理邮件正文需要启用 gotenberg 与 tika 服务。</p>
+<h3 class="md-h3"><a class="header-anchor" rel="nofollow"></a> 6.4 手机端</h3>
+<p>官方不提供独立手机应用，可使用第三方社区应用，通过接口上传拍照文档，或使用扫描类应用把文件存到 consume 目录。</p>
+<h3 class="md-h3"><a class="header-anchor" rel="nofollow"></a> 6.5 可选：启用 Office 与邮件解析</h3>
+<p>在 Compose 中增加 gotenberg 与 tika 服务，并在 webserver 中启用：</p>
+<pre class="language-yaml codetheme-tomorrownight"><code class="language-yaml codetheme-tomorrownight">      <span class="token key atrule">PAPERLESS_TIKA_ENABLED</span><span class="token punctuation">:</span> <span class="token number">1</span>
+      <span class="token key atrule">PAPERLESS_TIKA_GOTENBERG_ENDPOINT</span><span class="token punctuation">:</span> http<span class="token punctuation">:</span>//gotenberg<span class="token punctuation">:</span><span class="token number">3000</span>
+      <span class="token key atrule">PAPERLESS_TIKA_ENDPOINT</span><span class="token punctuation">:</span> http<span class="token punctuation">:</span>//tika<span class="token punctuation">:</span><span class="token number">9998</span>
+</code></pre>
+<p>上面两个地址是容器间的内部服务连接配置，对应的 gotenberg、tika 服务镜像与启动参数请对照官方示例补全。</p>
+<hr>
+<h2 class="md-h2"><a class="header-anchor" rel="nofollow"></a> 七、整理与自动化建议</h2>
+<ol>
+<li><strong>规划分类体系</strong>：先想好标签、通信方、文档类型和存储路径，不要一开始就建太多。</li>
+<li><strong>善用自动匹配</strong>：给标签或通信方设置匹配规则，选择自动匹配时，系统会根据已有文档训练分类模型。</li>
+<li><strong>自动分类需要样本</strong>：通常每类需要一定数量的已分类文档，模型才会可靠，初期请手动校正。</li>
+<li><strong>使用工作流</strong>：例如「来自某邮箱的文件自动加上某标签」「文件名包含某关键词自动设置类型」。</li>
+<li><strong>ASN 编号</strong>：给纸质原件贴上归档序号（ASN），入库时通过条形码识别，便于按编号找到实体文件。</li>
+<li><strong>保留实体件</strong>：重要的法律文件和证件，数字化后仍应保留原件。</li>
+</ol>
+<hr>
+<h2 class="md-h2"><a class="header-anchor" rel="nofollow"></a> 八、备份与恢复</h2>
+<h3 class="md-h3"><a class="header-anchor" rel="nofollow"></a> 8.1 推荐方式：官方导出工具</h3>
+<pre class="language-bash codetheme-tomorrownight"><code class="language-bash codetheme-tomorrownight"><span class="token function">docker</span> compose <span class="token builtin class-name">exec</span> <span class="token parameter variable">-T</span> webserver document_exporter <span class="token punctuation">..</span>/export
+</code></pre>
+<p>导出内容包括原始文档、存档版本，以及记录元数据的清单文件。导出目录再用 tar 打包并同步到异地：</p>
+<pre class="language-bash codetheme-tomorrownight"><code class="language-bash codetheme-tomorrownight"><span class="token function">tar</span> <span class="token parameter variable">-czf</span> paperless-export-<span class="token variable"><span class="token variable">$(</span><span class="token function">date</span> +%Y%m%d<span class="token variable">)</span></span>.tar.gz ./export
+</code></pre>
+<p>建议用 cron 每天自动执行。</p>
+<h3 class="md-h3"><a class="header-anchor" rel="nofollow"></a> 8.2 完整备份</h3>
+<p>停止容器后，备份 data、media 两个卷、数据库卷以及 Compose 与环境配置文件，同样要同步到异地。</p>
+<h3 class="md-h3"><a class="header-anchor" rel="nofollow"></a> 8.3 恢复</h3>
+<p>在新环境部署相同版本的 Paperless-ngx，把导出目录放到 export，然后执行：</p>
+<pre class="language-bash codetheme-tomorrownight"><code class="language-bash codetheme-tomorrownight"><span class="token function">docker</span> compose <span class="token builtin class-name">exec</span> webserver document_importer <span class="token punctuation">..</span>/export
+</code></pre>
+<p>注意：</p>
+<ul>
+<li>导入需要在尽量干净的实例上进行，并使用与导出时相同的版本。</li>
+<li>遵循 3-2-1 原则：3 份副本、2 种介质、1 份异地。</li>
+<li>备份中含有你的全部文档，请加密保存。</li>
+<li>定期做恢复演练。</li>
+</ul>
+<hr>
+<h2 class="md-h2"><a class="header-anchor" rel="nofollow"></a> 九、升级与维护</h2>
+<pre class="language-bash codetheme-tomorrownight"><code class="language-bash codetheme-tomorrownight"><span class="token builtin class-name">cd</span> ~/paperless-ngx
+<span class="token function">docker</span> compose pull
+<span class="token function">docker</span> compose up <span class="token parameter variable">-d</span>
+<span class="token function">docker</span> image prune
+</code></pre>
+<p>建议：</p>
+<ul>
+<li>升级前先导出一份备份，并阅读版本发布说明，重点关注破坏性变更。</li>
+<li>固定镜像版本号，按需升级，不要让 latest 在无意中自动升级。</li>
+<li>数据库大版本（如 PostgreSQL 升级主版本）需要单独规划数据迁移，不能只改镜像标签。</li>
+<li>修改 OCR 语言或相关设置后，旧文档不会自动重新识别，必要时手动触发重新处理。</li>
+</ul>
+<hr>
+<h2 class="md-h2"><a class="header-anchor" rel="nofollow"></a> 十、性能调优</h2>
+<table>
+<thead>
+<tr>
+<th>变量</th>
+<th>作用</th>
+<th>建议</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PAPERLESS_TASK_WORKERS</td>
+<td>并行处理的任务数</td>
+<td>按 CPU 与内存调整，小机器设为 1 到 2</td>
+</tr>
+<tr>
+<td>PAPERLESS_THREADS_PER_WORKER</td>
+<td>每个任务的线程数</td>
+<td>与 CPU 核数匹配，避免过载</td>
+</tr>
+<tr>
+<td>PAPERLESS_OCR_MODE</td>
+<td>OCR 模式</td>
+<td>默认跳过已有文字的页面，加快处理</td>
+</tr>
+<tr>
+<td>PAPERLESS_OCR_CLEAN</td>
+<td>清理扫描噪点</td>
+<td>效果因文档而异，会增加耗时</td>
+</tr>
+<tr>
+<td>存储位置</td>
+<td>数据库与索引所在磁盘</td>
+<td>建议放在 SSD</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 class="md-h2"><a class="header-anchor" rel="nofollow"></a> 十一、常见问题排查</h2>
+<table>
+<thead>
+<tr>
+<th>现象</th>
+<th>可能原因</th>
+<th>处理办法</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>consume 目录文件没被处理</td>
+<td>权限不匹配，或网络共享不触发事件</td>
+<td>核对 UID 与 GID，网络共享启用轮询</td>
+</tr>
+<tr>
+<td>中文识别效果差或乱码</td>
+<td>没有安装或指定中文语言包</td>
+<td>同时设置 OCR 语言与语言包变量，并重建容器</td>
+</tr>
+<tr>
+<td>登录或提交表单提示 CSRF 错误</td>
+<td>PAPERLESS_URL 与实际访问地址不一致</td>
+<td>修正 URL，必要时配置受信任来源</td>
+</tr>
+<tr>
+<td>分享链接、重置密码链接无法打开</td>
+<td>URL 使用了 HTTP 而实际是 HTTPS</td>
+<td>改为完整的公网 https 地址</td>
+</tr>
+<tr>
+<td>大文件上传失败</td>
+<td>反向代理限制了请求体大小</td>
+<td>调大体积限制和超时</td>
+</tr>
+<tr>
+<td>启动后数据库连接失败</td>
+<td>数据库未就绪或密码不一致</td>
+<td>检查两处密码，查看数据库容器日志</td>
+</tr>
+<tr>
+<td>OCR 处理很慢或内存不足</td>
+<td>并发过高或机器配置偏低</td>
+<td>降低并发，升级内存，必要时分批导入</td>
+</tr>
+<tr>
+<td>文件权限被改成 root</td>
+<td>目录由 Docker 自动创建</td>
+<td>提前手动创建目录并设置所有者</td>
+</tr>
+<tr>
+<td>搜索不到刚导入的文档</td>
+<td>仍在排队处理</td>
+<td>查看任务页面，等待处理完成</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 class="md-h2"><a class="header-anchor" rel="nofollow"></a> 十二、命令速查</h2>
+<pre class="language-bash codetheme-tomorrownight"><code class="language-bash codetheme-tomorrownight"><span class="token comment"># 启动 / 停止 / 重启</span>
+<span class="token function">docker</span> compose up <span class="token parameter variable">-d</span>
+<span class="token function">docker</span> compose down
+<span class="token function">docker</span> compose restart webserver
+
+<span class="token comment"># 日志</span>
+<span class="token function">docker</span> compose logs <span class="token parameter variable">-f</span> webserver
+
+<span class="token comment"># 创建管理员</span>
+<span class="token function">docker</span> compose <span class="token builtin class-name">exec</span> webserver createsuperuser
+
+<span class="token comment"># 导出 / 导入</span>
+<span class="token function">docker</span> compose <span class="token builtin class-name">exec</span> <span class="token parameter variable">-T</span> webserver document_exporter <span class="token punctuation">..</span>/export
+<span class="token function">docker</span> compose <span class="token builtin class-name">exec</span> webserver document_importer <span class="token punctuation">..</span>/export
+
+<span class="token comment"># 升级</span>
+<span class="token function">docker</span> compose pull <span class="token operator">&amp;&amp;</span> <span class="token function">docker</span> compose up <span class="token parameter variable">-d</span>
+
+<span class="token comment"># 查看已安装的 OCR 语言</span>
+<span class="token function">docker</span> compose <span class="token builtin class-name">exec</span> webserver tesseract --list-langs
+</code></pre>
+<hr>
+</div>
+        </div>
+        <div id="blogDialog" class="blogDialog" style="display:none;">
+           <span class="dialogText">推荐</span>
+           <img class="dialogImg" src="https://res-hd.hc-cdn.cn/ecology/9.3.209/v2_resources\images\global\blog-dialog.png">
+           <div class="dialogContent">
+                <p>华为开发者空间发布</p>
+                <p>让每位开发者拥有一台云主机</p>
+            </div>
+        </div>
+        
+
+        
+        
+            
+            <div class="cloud-blog-detail-copyrights">
+            【声明】本内容来自华为云开发者社区博主，不代表华为云及华为云开发者社区的观点和立场。转载时必须标注文章的来源（华为云社区）、文章链接、文章作者等基本信息，否则作者和本社区有权追究责任。如果您发现本社区中有涉嫌抄袭的内容，欢迎发送邮件进行举报，并提供相关证据，一经查实，本社区将立刻删除涉嫌侵权内容，举报邮箱：
+                <a class="mail-contact-address por-link" href="mailto:cloudbbs@huaweicloud.com" >cloudbbs@huaweicloud.com</a>
+                </div>
+            
+        
+        <!-- 版权声明 end -->
+        
+        <div class="blog-menu-footer m-blog-menu-footer-top">
+            
+            
+                <a class="common-blog-menu-btn por-label-type" target="_blank" rel="noopener noreferrer" mate_data_ts="bbs_blogdetail_blogTag.click.Docker_Blog" title="Docker" href="https://developer.huaweicloud.com/tags/200489/blog_1">Docker</a>
+            
+                <a class="common-blog-menu-btn por-label-type" target="_blank" rel="noopener noreferrer" mate_data_ts="bbs_blogdetail_blogTag.click.华为云Flexus云服务_Blog" title="华为云Flexus云服务" href="https://developer.huaweicloud.com/tags/202844/blog_1">华为云Flexus云服务</a>
+            
+                <a class="common-blog-menu-btn por-label-type" target="_blank" rel="noopener noreferrer" mate_data_ts="bbs_blogdetail_blogTag.click.弹性云服务器 ECS_Blog" title="弹性云服务器 ECS" href="https://developer.huaweicloud.com/tags/200579/blog_1">弹性云服务器 ECS</a>
+            
+                <a class="common-blog-menu-btn por-label-type" target="_blank" rel="noopener noreferrer" mate_data_ts="bbs_blogdetail_blogTag.click.数据库_Blog" title="数据库" href="https://developer.huaweicloud.com/tags/200742/blog_1">数据库</a>
+            
+        </div>
+        
+        <div id="adSide" style="margin-bottom: 76px;"></div>
+<script src="https://portal.huaweicloud.com/rest/cbc/portalapppublishservice/v1/ad/disp?pos=www.huaweicloud.com/ad/blog_bottom.html&comp=pep-ad-img_1664508731473&containerId=adSide"
+async>
+</script>
+        <ul class="operate-block">
+  <li id="isVote" mate_data_ts="bbs_blogdetail_like.click.Paperless-ngx 项目部署" class="operate-vote flex-vertical-center"><i class="icon-vote"></i><span>点赞</span></li>
+  <li id="isLike" mate_data_ts="bbs_blogdetail_collect.click.Paperless-ngx 项目部署" class="operate-like  flex-vertical-center"><i class="icon-like"></i><span>收藏</span></li>
+  <li id="isFollow" class="operate-follow  flex-vertical-center" manual_data_ts><i class="por-icon por-icon-plus"></i><span>关注作者</span></li>
+</ul>
+
+    </div>
+</div>
+<div class="other-article-block" id="other-block" style="display: none;">
+    <p class="por-text-title-t5 other-title">作者其他文章</p>
+</div>
+<div class="other-article-block" id="other-related-block" style="display: none;">
+    <p class="por-text-title-t5 other-title">相关文章</p>
+</div>
+
+<div class="comment-block" id="comment">
+  <p class="por-text-title-t5">评论（<span id="commentTotalCount">0</span>）</p>
+  <div class="comment-textarea-wrap">
+      <div class="comment-textarea-tips comment-login-tips">
+          登录后可评论，请 <a class="por-link login-btn" href="https://auth.huaweicloud.com/authui/login">登录</a> 或 <a class="por-link regist-btn" href="https://reg.huaweicloud.com/registerui/public/custom/register.html">注册</a>
+      </div>
+      <div class="comment-textarea-cover">
+          <textarea class="comment-textarea" id="textarea-comment-blog" data-real-height="80" maxlength="1000" placeholder="写下您的评论…"></textarea>
+          <span class="comment-textarea-wordwrap"> <var class="comment-textarea-word">0</var>/1000</span>
+          <button class="comment-btn por-btn por-btn-primary por-btn-large comment-section-comment-btn btn-submit-comment" manual_data_ts disabled data-status="1">评论</button>
+      </div>
+      <div class="comment-textarea-tips comment-right-tips">
+        抱歉，系统识别当前为高风险访问，暂不支持该操作
+      </div>
+  </div>
+  <ul class="comment-list">
+  </ul>
+</div>
+
+<div class="mobile-commenter-cover m-blog-user-comment">
+  <div class="mobile-commenter">
+    <textarea class="mobile-comment-textarea" placeholder="说点什么" maxlength="1000"></textarea>
+    <button class="por-btn por-btn-primary por-btn-small mobile-comment-btn" id="send-comment">评论</button>
+    <ul class="operation-block">
+      <li class="operate-vote" id="isVoteMb"><i class="icon-vote"></i></li>
+      <li class="operate-like" id="isLikeMb"><i class="icon-like"></i></li>
+    </ul>
+  </div>
+  <div class="comment-detail mobile-comment-pop por-scrollbar-s">
+    <i class="icon-delete"></i>
+    <h3 class="mobile-comment-title por-text-title-t5">全部回复</h3>
+    <div class="mobile-comment-loader">上滑加载中</div>
+  </div>
+</div>
+
+<div class="pop-block" id="nick-block">
+  <div class="pop-detail-block nick-block">
+    <h3 class="pop-title">设置昵称</h3>
+    <div class="warning-box">
+        <p class="nick-tip">在此一键设置昵称，即可参与社区互动！</p>
+        <input class="nick-input" id="nick-input" type="text" placeholder="点击输入昵称" autocomplete="off"/>
+        <p class="nick-warning" id="nick-warning">*长度不超过10个汉字或20个英文字符，设置后3个月内不可修改。</p>
+        <p class="nick-warning-mb" id="nick-warning-mb">*长度不超过10个汉字或20个英文字符，设置后3个月内不可修改。</p>
+        
+    </div>
+    <div class="btn-block">
+        <a id="nick-confirm" class="btns red-btn small" disabled href="javascript:void(0);">
+            确认
+        </a>
+        <a class="btns white-btn small cancel-btn" href="javascript:void(0);">
+            取消
+        </a>
+    </div>
+    <i class="icon-delete"></i>
+  </div>
+</div>
+
+<script>
+// 自定义防抖函数
+function debounce(func, delay) {
+  let timeout;
+  return function() {
+    const context = this;
+    const args = arguments;
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      func.apply(context, args);
+    }, delay);
+  };
+}
+let blogContentElement = $('.cloud-blog-detail-content-wrap')
+let blogDialogElement = $('#blogDialog')
+let offsetTop = blogContentElement.offset().top; // 获取元素距离顶部的高度
+let windowHeight = window.innerHeight; // 获取当前浏览器高度
+let isVisible = blogDialogElement.css('visibility');
+// 添加点击事件
+blogDialogElement.click(function() {
+    let win = window.open('https://developer.huaweicloud.com/space/devportal/desktop?source=bbs','_blank')
+    win.opener = null
+})
+
+
+// 当特定元素滚动时执行的代码
+$(window).scroll(debounce(function() {
+    let contentHeight = blogContentElement.height(); // 当前元素高度
+    let windowScrollTop = $(window).scrollTop();
+    let isVisible = blogDialogElement.css('visibility');
+    let gapHeight = windowScrollTop + offsetTop - (contentHeight * 0.8)
+    if(gapHeight > 0 ) {
+        blogDialogElement.css('left','24px')
+    } else {
+        blogDialogElement.css('left','-480px')
+    }
+},300));
+</script>
+
+                    </div>
+                    <div class="cloud-blog-detail-right">
+                        <div class="sidebar-cover">
+                            <div data-is-container data-mod-id="topContainer" data-mod-name="topContainer" data-container-name="topContainer">
+                                
+                                
+                            </div>
+                            <div class="sidebar-right" id="about-author" style="display: none;">
+  <h3 class="por-text-title-t6">关于作者</h3>
+</div>
+                            <div class="sidebar-right ad-card judgeImg" id="ad-card" style="display: none;"></div>
+                            <div class="sidebar-right about-nav" style="display: none">
+  <h3 class="por-text-title-t6">目录</h3>
+  <div class="sidebar-content">
+    <ul class="content-list link-list por-scrollbar-s"></ul>
+  </div>
+</div>
+                            <div class="sidebar-right" id="recommend-blog" style="display: none;">
+  <h3 class="por-text-title-t6 hot-recommend">热门推荐<span class="check-more">查看更多<i class="por-icon por-icon-right"></i></span></h3>
+  <div class="sidebar-content">
+  </div>
+</div>
+                            <div class="sidebar-right" id="related-articles" style="display: none;">
+  <h3 class="por-text-title-t6 hot-recommend">相关文章</h3>
+  <div class="sidebar-content">
+  </div>
+</div>
+                            
+<div class="sidebar-right cloud-plan" >
+  <h3 class="por-text-title-t6">加入云驻计划，成为创作者</h3>
+  <div class="sidebar-content">
+    <ul class="content-list link-list por-scrollbar-s">
+    
+        <li class="blogger-item flex-vertical-center">
+            <div class="left">
+                <div class="img-box"></div>
+            </div>
+            <div class="right">
+                <span class="por-text-title-t7" title="华为云周边好礼">华为云周边好礼</span>
+            </div>
+        </li>
+    
+        <li class="blogger-item flex-vertical-center">
+            <div class="left">
+                <div class="img-box"></div>
+            </div>
+            <div class="right">
+                <span class="por-text-title-t7" title="免费体验产品">免费体验产品</span>
+            </div>
+        </li>
+    
+        <li class="blogger-item flex-vertical-center">
+            <div class="left">
+                <div class="img-box"></div>
+            </div>
+            <div class="right">
+                <span class="por-text-title-t7" title="特殊身份标识">特殊身份标识</span>
+            </div>
+        </li>
+    
+        <li class="blogger-item flex-vertical-center">
+            <div class="left">
+                <div class="img-box"></div>
+            </div>
+            <div class="right">
+                <span class="por-text-title-t7" title="线下官方门票">线下官方门票</span>
+            </div>
+        </li>
+    
+        <li class="blogger-item flex-vertical-center">
+            <div class="left">
+                <div class="img-box"></div>
+            </div>
+            <div class="right">
+                <span class="por-text-title-t7" title="内部专家零距离">内部专家零距离</span>
+            </div>
+        </li>
+    
+        <li class="blogger-item flex-vertical-center">
+            <div class="left">
+                <div class="img-box"></div>
+            </div>
+            <div class="right">
+                <span class="por-text-title-t7" title="与10000+优质创作者共同成长">与10000+优质创作者共同成长</span>
+            </div>
+        </li>
+    
+    </ul>
+  </div>
+  <a class="por-btn join-btn" target="_blank" rel="noopener noreferrer" href="https://bbs.huaweicloud.com/contents/reward.html">立即加入</a>
+</div>
+                            <div class="sidebar-right" id="related-product" style="display: none;">
+  <h3 class="por-text-title-t6">相关产品</h3>
+  <div class="sidebar-content">
+  </div>
+</div>
+                        </div>
+                    </div>
+                </div>
+                <div id="report-dialog">
+    <div class="dialog-wrapper">
+      <div class="dialog">
+        <div class="dialog-close"></div>
+        <iframe
+            id="iframe"
+            src=""
+            frameborder="0"
+            style="width: 100%; height: 650px"
+        ></iframe>
+    </div>
+  </div>
+  <div class="curtain"></div>
+</div>
+
+
+
+            </div>
+            
+        </div>
+        <div class="banner-box">
+  <div class="banner">
+      <div class="car-btn new-win"><span>新窗</span></div>
+      <div class="car-btn close"><span>关闭</span></div>
+      <div class="change-box-pre"><i class="change pre"></i></div>
+      <div class="demo">
+          <div class="maxPic-box">
+              <div class="maxPic">
+                  <div class="maxPicBox"><img referrerpolicy="no-referrer" id="mainPic" src="" data-index="0"></div>
+              </div>
+          </div>
+      </div>
+      <div class="change-box-next"><i class="change next"></i></div>
+  </div>
+</div>
+        <script src="https://res-static.hc-cdn.cn/aem/content/dam/cloudbu-develop/archive/china/zh-cn/developer/developer-page/js/developer-modal.js"></script>
+        <script src="https://res-hd.hc-cdn.cn/ecology/9.3.209/v2_resources/ydcomm/js/pop-nick-block.js"></script>
+        <script src="https://res-static.hc-cdn.cn/aem/content/dam/cloudbu-site/archive/commons/web_resoure/framework/portal/pmp/pmp.js"></script>
+        <script src="https://res-hd.hc-cdn.cn/ecology/9.3.209/v2_resources/ydcomm/js/wechat-js.js"></script>
+        <script src="https://res-static.hc-cdn.cn/aem/content/dam/cloudbu-site/archive/commons/3rdlib/jquery/jquery.qrcode.min.js"></script>
+        <script src="https://portal.hc-cdn.com/cnpm-portal-utils/1.2.3/PortalUtils.umd.js"></script>
+        <script src="https://res-static.hc-cdn.cn/aem/content/dam/cloudbu-site/archive/commons/3rdlib/jquery/jquery.mousewheel.min.js"></script>
+        <script src="https://res-hd.hc-cdn.cn/ecology/9.3.209/v2_resources/ydcomm/libs/newblog_js/album.js"></script>
+        <script src="https://res-hd.hc-cdn.cn/ecology/9.3.209/v2_resources/ydcomm/libs/newblog_js/banner.js"></script>
+        <script src="https://res-static.hc-cdn.cn/aem/content/dam/cloudbu-develop/archive/china/zh-cn/developer/developer-page/js/blogdetail.js"></script>
+        <script src="https://res-hd.hc-cdn.cn/ecology/9.3.209/v2_resources/js/prism.js"></script>
+        <div id="footer"></div> 
+<script>
+    var pep2JsCssUrl = 'https://res-static.hc-cdn.cn/aem';
+    var headerLocation = 'https://www.huaweicloud.com';
+    var domainSsoDomain = 'https://auth.huaweicloud.com';
+    var domainBbsDomain = 'https://bbs.huaweicloud.com';
+    var domainPortal = 'https://portal.huaweicloud.com';
+    var cbcBbsImg = 'https://bbs-img.huaweicloud.com';
+    var fuxiStatic = 'https://res-hd.hc-cdn.cn/ecology';
+    var staticVersion = '9.3.209';
+    var domainReg = 'https://reg.huaweicloud.com';
+    var networkBbsDomain = 'https://bbs.huaweicloud.com';
+    var networkDeveloper = 'https://developer.huaweicloud.com';
+    var networkEdu = 'https://edu.huaweicloud.com';
+    var blogId = 'f40ac4fc8fd448ee826e2b8733e6d0f1';
+    var devdataDomain = 'https://devdata.huaweicloud.com';
+    var pep2HtmlUrl = 'https://developer.huaweicloud.com';
+</script>
+<script src="https://res-static.hc-cdn.cn/aem/content/dam/cloudbu-develop/archive/china/zh-cn/developer/developer-page/js/header-message.js"></script>
+<script src="https://res-static.hc-cdn.cn/aem/content/dam/cloudbu-site/archive/commons/apm/wise_trace.min.js"></script>
+<script src="https://res-hd.hc-cdn.cn/ecology/9.3.209/js/v1/jquery.base64.js"></script>
+<script src="https://portal.hc-cdn.com/cnpm-link-to/3.1.9/LinkTo.umd.js"></script>
+<script src="https://res-static.hc-cdn.cn/aem/content/dam/cloudbu-develop/archive/china/zh-cn/developer/developer-page/js/developer-crosssite.js"></script>
+<script src="https://res-static.hc-cdn.cn/aem/content/dam/cloudbu-site/archive/commons/3rdlib/polyfill/polyfill.min.js"></script>
+<script src="https://res-static.hc-cdn.cn/aem/content/dam/cloudbu-site/archive/commons/web_resoure/cms/static/js/v2/appCustom.js"></script>
+<script src="https://res-static.hc-cdn.cn/aem/content/dam/cloudbu-develop/archive/china/zh-cn/developer/developer-page/js/developer-modal.js"></script>
+<script src="https://res-hd.hc-cdn.cn/ecology/9.3.209/v2_resources/ydcomm/js/content-footer-setLocation.js"></script>
+<script src="https://res-static.hc-cdn.cn/aem/content/dam/cloudbu-develop/archive/china/zh-cn/developer/developer-page/js/hd-tracking.js"></script>
+<script src="https://res-hd.hc-cdn.cn/ecology/9.3.209/v2_resources/ydcomm/js/ydcommbi.js"></script>
+
+<script type="text/javascript" src="https://portal.hc-cdn.com/bi/uba.js"></script>
+
+<script src="https://res-hd.hc-cdn.cn/ecology/9.3.209/v2_resources/ydcomm/js/content-footer-login.js"></script>
+<script src="https://res-hd.hc-cdn.cn/ecology/9.3.209/v2_resources/ydcomm/js/content-footer-catchException.js"></script>
+<script src="https://res-hd.hc-cdn.cn/ecology/9.3.209/libs/jquery/jquery.form.js"></script>
+<script src="https://res-hd.hc-cdn.cn/ecology/9.3.209/v2_resources/ydcomm/wechat/js/wxshare.min.js"></script>
+<script src="https://res-static.hc-cdn.cn/aem/content/dam/cloudbu-develop/archive/china/zh-cn/developer/developer-page/js/weixinshare.js"></script>
+<script src="https://res-hd.hc-cdn.cn/ecology/9.3.209/v2_resources/ydcomm/js/content-footer-setName.js"></script>
+<script src="https://res-hd.hc-cdn.cn/ecology/9.3.209/v2_resources/ydcomm/js/content-footer-common.js"></script>
+<script>
+    if(window.$aioList && window.$aioList.length > 0) {
+        for(var i = 0; i < window.$aioList.length; i++) {
+            var tmpComponent = window.$aioList[i];
+            if(tmpComponent) {
+                var tmpComponentInfo = tmpComponent.split("/");
+                if(tmpComponentInfo.length == 2) {
+                    var name = tmpComponentInfo[0];
+                    var version = tmpComponentInfo[1];
+                    var tmpComponentWrapperEle = $('[data-mod-name="' + name + '"]');
+                    var eleVersionAttr = tmpComponentWrapperEle.attr("data-mod-version");
+                    if(eleVersionAttr && eleVersionAttr != version) {
+                        var linkEle = $('head link[href*="' + name + '/' + version + '"]');
+                        linkEle.attr("href", linkEle.attr("href").replace(version, eleVersionAttr));
+                    }
+                }
+            }
+        }
+    }
+</script>
+
+<!--/* 55 trace for some special page */-->
+<script>
+    !function($){
+        if(window.dataLayer && window.dataLayer.push){
+
+            if(window.location.pathname == "/consultation/") {
+                $("#submitBtn").click(function(e){
+                    window.dataLayer.push({
+                        "event": "consultSubmit",
+                        "productName": $("#applicationscene").val()
+                    });
+                })
+            }
+
+            $("#header .header-login").click(function(e){
+                window.dataLayer.push({
+                    "event": "loginIntention"
+                })
+            });
+
+            $("#header .header-register").click(function(e){
+                window.dataLayer.push({
+                    "event": "creationIntention",
+                    "pageType": window.mate_data_ts_pageType,
+                    "pagePosition": "Header"
+                })
+            });
+
+
+        }
+    }(jQuery);
+</script>
+<script>
+    (function(){ var bp = document.createElement('script'); var curProtocol = window.location.protocol.split(':')[0]; if (curProtocol === 'https') { bp.src = 'https://zz.bdstatic.com/linksubmit/push.js'; } else { bp.src = 'http://push.zhanzhang.baidu.com/push.js'; } var s = document.getElementsByTagName("script")[0]; s.parentNode.insertBefore(bp, s); })();
+</script>
+
+<script src="https://res-static.hc-cdn.cn/aem/content/dam/cloudbu-site/archive/commons/apm/wise_trace.min.js?sttl=1.1.74"></script>
+<script>
+    (function($){
+        function setLocaleCookie(name, value) {
+            var cookieString;
+            cookieString = name + "=" + escape(value) + ";path=/;" + "domain=.huaweicloud.com;";
+            document.cookie = cookieString;
+        }
+        if($("html").attr("lang")) {
+            setLocaleCookie('locale', $("html").attr("lang").toLowerCase());
+        }
+    })(jQuery);
+</script>
+
+<script>
+    $("a[href*='/pep-dialog/']").each(function(){
+        var ele = $(this);
+        var href = ele.attr("href");
+        var path = href.replace(/.html/g, "");
+        var ajaxPath = path.indexOf("activity/")==-1?path:path.split("activity/")[1];
+        var arr = path.split("/");
+        var dialogName = arr[arr.length-1];
+        var location_lang=$('html').attr('lang').toLowerCase();
+        var site = $('html').attr('site').toLowerCase() == 'china'? 'china':'hk';  //  站点判断，国内：china；国际站：hk
+        var dialogUrl = (window.location.host.indexOf(".com") != -1&&window.location.host.indexOf("pep.huaweicloud.com") == -1) ? "https://"+window.location.host +"/"+ajaxPath + "/jcr:content/dialog.html?wcmmode=disabled":"/content/cloudbu-site/"+site+"/"+location_lang+"/activity/" +ajaxPath + "/jcr:content/dialog.html?wcmmode=disabled";
+        ele.css('pointer-events','auto');
+        ele.on("click",function (e) {
+            e.stopPropagation();
+            e.preventDefault();
+            if($("body [data-pep-path*='" + dialogName + "']").length !== 0) {
+                $("body [data-pep-path*='" + dialogName + "']").remove();
+            }
+            // dialog for activity
+            $.ajax({
+                url: dialogUrl,
+                success: function(data){
+                    if(data){
+                        data = data.replace('block','none');
+                        $("body").append(data);
+                        $("#modal-rule").html($("body [data-pep-path*='" + dialogName + "']").html());
+                        window.activityModal.show('#modal-rule',true);
+                    }
+                }
+            })
+        });
+    });
+
+    // set fromuser to cookie
+    function $parseQueryString(name) {
+        var reg = new RegExp("(^|&)"+ name +"=([^&]*)(&|$)");
+        var r = window.location.search.substr(1).match(reg);
+        if(r!=null){
+            return unescape(r[2]);
+        }
+        else {
+            return null;
+        }
+    };
+    if($parseQueryString("fromacct")) {
+        var fromacct = $parseQueryString("fromacct");
+        var tmpEle = $("<div></div>");
+        tmpEle.text(fromacct);
+        fromacct = tmpEle.html();
+        window.$usiteUtil.setCookie("h_fromacct", fromacct);
+    }
+</script>
+<script type="text/javascript" src="https://portal.hc-cdn.com/cnpm-baseui/2.8.11/index.js"></script>
+<script type="text/javascript" src="https://res.hc-cdn.com/cnpm-feloader/1.0.8/feloader.js"></script>
+        <script src="https://portal.hc-cdn.com/cnpm-lazyload/2.0.10/index.js"></script>
+        <script src="https://res-static.hc-cdn.cn/aem/content/dam/cloudbu-develop/archive/china/zh-cn/developer/developer-page/js/hd-tracking.js"></script>
+        <script>
+            setTimeout(() => {
+                const getInnovationProjectDomainFromCookie = (key) => {
+                    const regex = new RegExp(`${key}=([^;]+)`);
+                    const match = document.cookie.match(regex);
+                    return match && match[1];
+                }
+                const ua = getInnovationProjectDomainFromCookie('ua');
+                let getCount = 0;
+                let timerHD = setInterval(() => {
+                    getCount++;
+                    if (window.HDTracking || getCount > 100) {
+                        clearInterval(timerHD);
+                        window.HDTracking.onInit('', window.userInfo?.domainId || ua, window.userInfo?.bbs_userID || '');
+                        window.HDTracking.onEvent(
+                            '社区',
+                            'Blog_Details_Browse',
+                            '博客详情页浏览',
+                            {
+                                blog_id: blogId,
+                                title: curBlogTitle,
+                                tag: tags,
+                            },
+                            false,
+                        );
+                    }
+                }, 50);
+            }, 2000);
+            window.FURION && window.FURION.reportCustomTime('rtti','65F5EB2606914739A5D5D464DF6DFFB0', 1);
+        </script>
+    </body>
+</html>
+            
+            
+        

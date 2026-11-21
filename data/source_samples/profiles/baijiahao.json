@@ -1,0 +1,67 @@
+{
+  "channel_id": "baijiahao",
+  "updated_at": "2026-11-21 09:54 UTC",
+  "sample_count": 2,
+  "stats": {
+    "avg_chars": 902.0,
+    "avg_title_len": 26.0,
+    "avg_para_count": 13.0,
+    "avg_para_len": 60.4,
+    "avg_headings": 2.0,
+    "avg_list_items": 5.0,
+    "table_ratio": 0.0,
+    "jsonld_ratio": 0.5,
+    "faq_ratio": 0.0,
+    "numbers_per_1k": 40.8,
+    "avg_gqs": 57.7
+  },
+  "geo_avg_scores": {
+    "conclusion_first": 0.35,
+    "structured": 0.05,
+    "quantified": 0.66,
+    "sourced": 0.3,
+    "atomic": 1.0,
+    "no_hype": 0.84,
+    "self_contained": 1.0,
+    "term_defined": 0.82,
+    "timeliness": 1.0,
+    "balanced": 0.15
+  },
+  "sample_headings": [
+    "2026年诺贝尔物理学奖",
+    "小米众筹新品90分休闲双肩包发布：防泼水/一包两仓",
+    "新闻推荐",
+    "24小时新闻排行榜"
+  ],
+  "sample_openings": [
+    "北京时间10月6日17时45分许， 2026年诺贝尔物理学奖 揭晓获奖名单 ， Francis Halzen获奖 ， 以表彰“他对冰立方中微子天文台和发现天体物理起源的高能中微子所做出的决定性贡献”。 奖金为1200万瑞典克朗（约合人民币8",
+    "­ 今天，小米生态链企业90分推出了新款背包——90分户外休闲双肩包。"
+  ],
+  "prompt_guidance": [
+    "参考该渠道实采 2 篇代表性网页：平均正文约 902 字，平均每段 60 字（共约 13 段）",
+    "标题长度约 26 字，正文平均包含 2.0 个小标题、5.0 条列表项",
+    "量化信息密度约 40.8 个数字/千字；表格出现率 0%，结构化 JSON-LD 覆盖率 50%",
+    "该站点常见小标题风格示例：「2026年诺贝尔物理学奖」 / 「小米众筹新品90分休闲双肩包发布：防泼水/一包两」 / 「新闻推荐」 / 「24小时新闻排行榜」",
+    "该站点首段常见开篇节奏示例：「北京时间10月6日17时45分许， 2026年诺贝尔物理学奖 揭晓获奖名单 ， Francis Halzen获奖 ， 以表彰“他对冰立方中微子天文台和…」"
+  ],
+  "samples": [
+    {
+      "file": "0e932eb406f2af10d6ed.html",
+      "url": "https://www.sohu.com/a/1096647151_120678874",
+      "title": "2026年诺贝尔物理学奖_获奖_表彰_贡献",
+      "char_count": 1541,
+      "heading_count": 1,
+      "list_item_count": 0,
+      "gqs": 61.9
+    },
+    {
+      "file": "ff7c661bb685398eadcd.html",
+      "url": "http://m.mnw.cn/news/digi/1437849.html",
+      "title": "小米众筹新品90分休闲双肩包发布：防泼水/一包两仓-手机闽南网",
+      "char_count": 263,
+      "heading_count": 3,
+      "list_item_count": 10,
+      "gqs": 53.5
+    }
+  ]
+}

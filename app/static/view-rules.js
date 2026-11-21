@@ -137,9 +137,26 @@ const RulesView = (() => {
         <div class="kv"><span>外链</span><b>≤ ${d.channel.max_links} 个</b><em>${d.channel.max_links === 0 ? "站外链接不可点" : ""}</em></div>
         <div class="kv"><span>风格</span><b>${G.esc(d.channel.style)}</b></div>
         <div class="chips" style="margin-top:8px">${d.channel.constraints.map((c) => `<span class="chip">${G.esc(c)}</span>`).join("")}</div>
+        <div class="sub-title">信息源网站实测特征（本地实采 HTML）</div>
+        <div id="rl-src-prof" class="note">加载实采特征…</div>
         <div class="sub-title">模型侧</div>
         <div class="note">${G.esc(d.model.note)}<br>地区：${d.model.vendor} · 检索能力：${d.model.retrieval ? "有" : "无"}（无检索则无法产生引用）</div>`;
       G.$("#rl-policy-meta").textContent = d.channel.name;
+      G.api(`/api/sources/profiles/${G.state.channel}`).then((sp) => {
+        const box = G.$("#rl-src-prof");
+        if (!box) return;
+        const p = sp && sp.profile;
+        if (!p) { box.textContent = "该渠道暂无本地实采 HTML 样本（改写将使用静态渠道规范）"; return; }
+        const s = p.stats;
+        box.innerHTML = `
+          <div class="rule-note good" style="margin-bottom:6px">
+            已采 <b>${p.sample_count}</b> 篇真实网页 · 均长 ${Math.round(s.avg_chars)} 字 · 均段长 ${Math.round(s.avg_para_len)} 字 ·
+            小标题 ${s.avg_headings} 个 · 列表 ${s.avg_list_items} 项 · 数据密度 ${s.numbers_per_1k}/千字 · 实测 GQS ${s.avg_gqs}
+          </div>
+          ${p.sample_headings && p.sample_headings.length
+            ? `<div class="chips">${p.sample_headings.slice(0, 4).map((h) => `<span class="chip">${G.esc(h.slice(0, 22))}</span>`).join("")}</div>`
+            : ""}`;
+      }).catch(() => {});
     } catch (e) {
       G.$("#rl-card-title").textContent = "该格规则卡";
       G.$("#rl-card-meta").textContent = "";

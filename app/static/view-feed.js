@@ -14,6 +14,8 @@ const FeedView = (() => {
       if (ce) { delete st.editing[ce.dataset.canceledit]; delete st.draft[ce.dataset.canceledit]; renderFeeds(); return; }
       const rc = ev.target.closest("[data-recheck]");
       if (rc) { recheck(rc.dataset.recheck, rc.dataset.mid); return; }
+      const pv = ev.target.closest("[data-preview]");
+      if (pv) { openPreview(pv.dataset.preview, pv.dataset.mid); return; }
       const tg = ev.target.closest("[data-toggle]");
       if (tg) {
         const box = G.$(`#rc-detail-${tg.dataset.toggle}`);
@@ -140,8 +142,13 @@ const FeedView = (() => {
                 ${G.esc(a.model_name)} · 适配分 ${a.score === null ? "—" : Number(a.score).toFixed(1)}</option>`).join("")}
             </select>
             ${picked ? `
-              <div class="fc-version" style="margin-top:8px">${G.esc(picked.title)}</div>
-              <div class="note">审核于 ${G.esc(picked.at || "")}</div>` : ""}
+              <div class="fc-vhead">
+                <div>
+                  <div class="fc-version">${G.esc(picked.title)}</div>
+                  <div class="note">审核于 ${G.esc(picked.at || "")}</div>
+                </div>
+                <button class="btn ghost" type="button" data-preview="${it.channel_id}" data-mid="${G.esc(picked.model_id)}">预览全文</button>
+              </div>` : ""}
             <div class="toolbar" style="margin-top:8px;align-items:center;gap:8px" data-draftfor="${it.channel_id}">
               <input type="text" class="url-input" id="url-${it.channel_id}" style="margin-top:0"
                 placeholder="发布后回填链接，例如 https://…" value="${G.esc(urlVal)}" ${locked ? "disabled" : ""}>
@@ -220,6 +227,22 @@ const FeedView = (() => {
     } finally {
       st.busy[ch] = false; render();
     }
+  }
+
+  function openPreview(ch, mid) {
+    if (!st.plan) return;
+    const it = st.plan.items.find((x) => x.channel_id === ch);
+    if (!it) return;
+    const v = (it.approved || []).find((a) => a.model_id === mid) || (it.approved || [])[0];
+    if (!v) return;
+    G.openPreview({
+      title: v.title,
+      body: v.body || "",
+      channel: it.channel_name,
+      model: v.model_name,
+      score: v.score,
+      checks: v.checks,
+    });
   }
 
   function renderFeeds() {

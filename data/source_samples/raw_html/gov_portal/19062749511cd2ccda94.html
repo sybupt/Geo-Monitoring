@@ -1,0 +1,532 @@
+
+
+
+
+
+ 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>参观咨询</title>
+
+<link rel="stylesheet" href="/webpc/style/style.css?v=0605" />
+<link rel="stylesheet" href="/webpc/js/module/Huploadify/Huploadify.css" type="text/css"/>
+<link rel="stylesheet" href="/webpc/js/module/css/common.css" type="text/css"/>
+<link rel="Bookmark"  type="image/x-icon"  href="/favicon.ico"/>
+<link rel="shortcut icon" href="/favicon.ico" />
+<link rel="icon" href="/favicon.ico" type="image/gif"/>
+<script type="text/javascript" src="/webpc/js/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="/webpc/js/jm-1.2.1.js"></script>
+<script type="text/javascript" src="/webpc/js/jquery.easydropdown.js"></script>
+<script type="text/javascript" src="/webpc/js/hash/crypto.js"></script>
+<script type="text/javascript" src="/webpc/js/hash/sm2.js"></script>
+<script type="text/javascript" src="/webpc/js/hash/md5_1.js"></script>
+<script type="text/javascript" src="/webpc/js/hash/hash.js"></script>
+<script type="text/javascript" src="/js/base.htm"></script>
+<script type="text/javascript" src="/webpc/js/hash/jsencrypt.min.js"></script>
+<style>
+#mapWrapper{height:525px;width:604px;}
+</style>
+</head>
+<body>
+<div class="top">
+
+<div class="top_t">
+<div class="top_head"><marquee behavior="scroll" scrolldelay="300" scrollamout="20"><li>●馆内瞬时承载量达5700人时启动临时限流预案</li><li>●APP和微信请在来馆前通过官方网站下载</li></marquee></div>
+    	<div class="main hack">
+          <h1 class="logo fl">上海自然博物馆</h1>
+          <div class="top_t_r fr">
+            	<div class="top_t_r_t fr"><span>&nbsp;</span></div>
+                <div class="blank"></div>
+                <div class="Search fr">
+                	<form id="qwjsForm" action="/qwjs.htm" method="post">
+                		<input type="hidden" id="currentpage_qwjs" name="currentpage" value="" >
+                    	<input name="key" type="text" class="Search_text fl" value="搜索" onfocus="if(this.value=='搜索'){this.value='';}" onblur="if(this.value==''){this.value='搜索';}" /><input type="button" class="Search_submit fr" value="" onclick="qwjsSubmit()" />
+                    </form>
+                    <script type="text/javascript">
+                    function qwjsSubmit(){
+                    	$("#currentpage_qwjs").val(1);
+                    	$("#qwjsForm").submit();
+                    }
+                    </script>
+                </div>
+          </div>
+        </div>
+  </div>
+
+<div class="nav"><div class="nav_c main"><a href="/" title="首 页">首 页</a>
+
+    <a title="常设展览" 
+        
+            
+            href='/cszl/zggk.htm'
+        '>
+        常设展览
+    </a>
+
+    <a title="临展电影" 
+        
+            
+            href='/lzdy/lzIndex.htm'
+        '>
+        临展电影
+    </a>
+
+    <a title="教育活动" 
+        
+            
+            href='/jyhd/index.htm'
+        '>
+        教育活动
+    </a>
+
+    <a title="藏品精粹" 
+        
+            
+            href='/cpjc/index.htm'
+        '>
+        藏品精粹
+    </a>
+
+    <a title="参观服务" class="on6"
+        
+            
+            href='/cgfw/cgzx.htm'
+        '>
+        参观服务
+    </a>
+
+    <a title="博物馆之友" 
+        
+            
+            href='/bwgzy/my-account.htm'
+        '>
+        博物馆之友
+    </a>
+
+</div></div>
+
+<div class="cgfw_banner">
+	<div class="cgfw_banner_c"><p>参观服务</p></div>
+	<div class="cgfw_banner_r"></div>
+    <div class="cszr_banner_topbg"></div>
+</div>
+</div>
+<div class="main hack">
+  	<div class="Layout_l fl">
+
+<div class="Position"><a title="参观服务" href="/cgfw/cgzx.htm">参观服务</a><i><img src="/webpc/images/Position_i.gif" width="4" height="7" /></i><a title="参观咨询" class="on" href="">参观咨询</a></div>
+        <div class="cgzx">
+            <div class="cgzx_map">
+            	<h2>地图</h2>
+                <div id="mapWrapper"></div>
+            </div>
+            <div id="cgxxDescription">
+            <div class="cgzx_kfsj">
+            	<h2>开放时间</h2>
+                <p>9:00-17:00（16:00停止入馆）（周二休馆，国定假日除外）。</p>
+                <p>如有调整或其他安排，我馆将另行公告</p>
+            </div>
+            <div class="cgzx_kfsj">
+            	<h2>交通信息</h2>
+            	<p>地址</p>
+                <p>上海市静安区北京西路510号（静安雕塑公园内）</p>
+                <p>公交线路</p>
+                <p>36路、19路、64路、136路、955路、41路、109路、301路、927路、324路、104路等</p>
+                <p>轨道交通</p>
+                <p>轨道交通1号线新闸路站（1号口）、轨道交通2号线南京西路站（2号口）、地铁13号线自然博物馆站</p>
+                <p>馆内无公众停车场，请尽量搭乘公共交通。</p>
+            </div>
+            <div class="wssp_mb">
+            	<h2>参观票价目表</h2>
+                <p>个人票</p>
+                <table width="100%" border="0" cellspacing="1" cellpadding="0">
+                <tr>
+                <th width="150">票 种</th>
+                <th width="80">票价</th>
+                <th>适用范围</td>
+                </tr>
+                <tr class="wssp_mb_bg">
+                <td>成人参观票</td>
+                <td>30元</td>
+                <td style="text-align:left">18周岁以上成人</td>
+                </tr>
+                <tr>
+                <td>老年参观票 </td>
+                <td>25元</td>
+                <td style="text-align:left">60至69周岁老年人<br />
+                  （凭本人有效证件入场）</td>
+                </tr>
+                <tr class="wssp_mb_bg">
+                <td>学生参观票</td>
+                <td>12元</td>
+                <td style="text-align:left">1.3米以上儿童以及全日制大学本科及以下学历学生<br />
+                  （凭本人学生证购票入场）</td>
+                </tr>
+                <tr class="wssp_mb_bg">
+                <td>现役军人家属票</td>
+                <td>25元</td>
+                <td style="text-align:left">现役军人家属(含现役军人的配偶、不能独立生活的成年子女、父母（扶养人））入场检票时，需出示相关身份证明</td>
+                </tr>
+                </table>
+                <p>免费人群</p>
+                <table width="100%" border="0" cellspacing="1" cellpadding="0">
+                <tr>
+                <th width="150">类 型</th>
+                <th>免费人群（凭有效证件入场）</th>
+                </tr>
+                <tr class="wssp_mb_bg">
+                <td rowspan="11" style="padding:0">
+                    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin:0; border:0; background:#fff">
+                    <tr>
+                    	<td style="background:#fff; height:385px">公示免票人群</td>
+                    </tr>
+                    </table>
+                </td>
+                <td style="text-align:left; padding:10px 20px;">离休干部、70周岁及以上的老年人</td>
+                </tr>
+                <tr>
+                <td style="text-align:left; padding:10px 20px;">现役军人</td>
+                </tr>
+                <tr class="wssp_mb_bg">
+                <td style="text-align:left; padding:10px 20px;">残疾人</td>
+                </tr>
+                <tr>
+                <td style="text-align:left; padding:10px 20px;">烈士家属</td>
+                </tr>
+                <tr class="wssp_mb_bg">
+                <td style="text-align:left; padding:10px 20px;">1.3米（含）以下儿童或6周岁（含）以下儿童</td>
+                </tr>
+                <tr>
+                <td style="text-align:left; padding:10px 20px;">国家综合性消防救援人员</td>
+                </tr>
+                <tr class="wssp_mb_bg">
+                <td style="text-align:left; padding:10px 20px;">因公牺牲军人遗属、病故军人遗属</td>
+                </tr>
+                <tr>
+                <td style="text-align:left; padding:10px 20px;">在职、退休、残疾消防救援人员（含政府专职消防员）和消防救援院校学员</td>
+                </tr>
+                <tr class="wssp_mb_bg">
+                <td style="text-align:left; padding:10px 20px;">军队文职人员、在职公安民警</td>
+                </tr>
+                </table>
+            </div>
+            <div class="wssp_mb">
+            	<h2>四维影院票价:30元/人</h2>
+                <table width="100%" border="0" cellspacing="1" cellpadding="0">
+                <tr>
+                <th>时间</th>
+                <th>片名</th>
+                <th>时长</td>
+                <th>价格</th>
+                <th>类型</td>
+                </tr>
+                <tr class="wssp_mb_bg">
+                <td>10:00-10:17</td>
+                <td>非洲大草原</td>
+                <td>17分钟</td>
+                <td>30元</td>
+                <td>4D</td>
+                </tr>
+                <tr>
+                <td>11:00-11:17</td> 
+                <td>熊猫滚滚</td>
+                <td>17分钟</td>
+                <td>30元</td>
+                <td>4D</td>
+                </tr>
+                <tr class="wssp_mb_bg">
+                <td>13:00-13:17</td>
+                <td>蛟龙入海</td>
+                <td>17分钟</td>
+                <td>30元</td>
+                <td>4D</td>
+                </tr>
+                <tr class="wssp_mb_bg">
+                <td>14:00-14:19</td>
+                <td>荧火</td>
+                <td>19分钟</td>
+                <td>30元</td>
+                <td>4D</td>
+                </tr>
+                <tr class="wssp_mb_bg">
+                <td>15:00-15:17</td>
+                <td>熊猫滚滚</td>
+                <td>17分钟</td>
+                <td>30元</td>
+                <td>4D</td>
+                <tr>
+                <td>16:00-16:19</td>
+                <td>荧火</td>
+                <td>19分钟</td>
+                <td>30元</td>
+                <td>4D</td>
+                </tr>
+                </table>
+            </div>
+            <div class="cgzx_kfsj">
+                <p>1、四维影院一人一票,儿童全票；</p>
+                <p>2、有严重心脏病、高血压、腰椎病、颈椎病的患者及老人、孕妇不宜观看；婴幼儿谢绝观看；</p>
+                <p>3、请勿将食品、饮料带入影院内享用；</p>
+                <p>4、当天实际放映场次、片名以影院排片为准。谢谢您的配合。</p>
+            </div>
+            <div class="cgzx_kfsj">
+            	<h2>参观须知</h2>
+                <p>1、上海自然博物馆（上海科技馆分馆）全面实行“线上实名制购票和现场身份证检票”，观众请携带二代身份证原件，并配合接受安检及验票。</p>
+                <p>2、入馆时请勿携带易燃易爆物品、有毒有害物品、管制刀具及宠物等。</p>
+                <p>3、拍照留念时请注意自身、他人及展品、标本安全，勿在馆内使用自拍杆、摄像三脚架拍照。</p>
+                <p>4、身高1米3以下儿童、高龄老人及行动不便者请在亲友的陪同下入馆参观。</p>
+                <p>5、有意观看宇宙大爆炸剧场、逃出白垩纪剧场和参加探索中心活动的观众，请通过官方网站或在现场提前预约。</p>
+                <p>6、本馆为禁烟场所，请关爱自身与他人的健康。</p>
+                <p>7、请自觉保持馆内清洁卫生，勿将开启的饮料和食品带入展区和影院。</p>
+                <p>8、参观时请尽量保持安静，不在馆内奔跑、嬉戏或大声喧哗。</p>
+                <p>9、请爱护公共设施，避免与标本、模型的亲密接触，操作展品时请按照提示或咨询工作人员。</p>
+                <p>10、如遇各类突发事件，请服从现场工作人员的引导，按指定线路撤离。感谢您的理解与支持。</p>
+            </div>
+            <div class="wfss_t">
+            	<h2>团队预订</h2>
+                <p>点击进入：https://ticket.sstm.org.cn/teamadmin/index.html#/login</p>
+                <p>团队咨询电话：（021）62620280<p>
+                <p>团体咨询传真：（021）62620160<p> 
+            </div>
+            <div class="wfss_t">
+            	<h2>探索中心</h2>
+                <p>探索中心的各类主题教育活动，您可以通过上海自然博物馆馆方网站和微信公众号进行预约，体验形式多样的教育活动。其中化石挖掘的参与方式为现场预约。</p>
+                <h3>主题教育活动预约</h3>
+                                <p>分为团队预约和个人预约两种，分别有不同的预约方式和时间安排，具体如下：<p>
+                                <h4>团队预约：</h4>
+				<p>面向学校团体，每周二至周五可提供预约。预约电话：021-62620261、021-68622000转5038</p>
+				<h4>个人预约：</h4>
+				<p>面向社会个人,可通过上海自然博物馆官方网站和微信公众号进行预约，每周六开放预约下周课程，额满为止。预约成功后请于活动开始前15分钟到现场确认，否则视为违约。</p>
+				
+                                <h4>化石挖掘区预约:</h4>
+				<p>化石挖掘区周二到周五每日开放3场，国定节假日及双休日每日开放4场，每场30分钟。可通过上海自然博物馆官方网站和微信公众号进行预约，每天8:35开放当天所有预约场次，约完为止。仅限身高1.0-1.3米儿童参加，参加活动前需本人到场测量身高。请于活动开始前15分钟至现场确认候场，过时视为自动放弃。</p>
+				<h4>友情提醒：</h4>
+				<p>不能如约参加活动时，请务必提前1小时通过网站、微信取消。</p>
+				<p>活动安排或有调整，请以当日现场公告为准，请您谅解。</p>
+				<p>教育活动免费，但须购买上海自然博物馆门票进馆。</p>
+            </div>
+
+            <div class="wfss_t">
+            	<h2>游客服务中心</h2>
+                <p>上海自然博物馆一楼大厅设有游客服务中心，总面积30平方米，采用一站式服务。当您遇到困难时，当您需要帮助时，请不要忘记我们的游客服务中心就在您身边。观众的满意是我们永远的承诺，游客服务中心将为您奉献一片真诚。</p>
+            </div>
+            <div class="wfss_c">
+            	<h2>服务项目</h2>
+                <p>1、为观众提供咨询服务、投诉服务。</p>
+                <p>2、为观众免费提供轮椅车、婴儿车、拐杖和针线服务。</p>
+                <p>3、为观众提供寻人广播、失物招领、救援帮助服务。</p>
+                <p>4、为观众免费提供导览图等相关信息资料服务。</p>
+                <p>5、提供大件行李寄存。</p>
+            </div>
+            <div class="wfss_t">
+            	<h2>联系电话</h2>
+                <p>上海自然博物馆游客服务中心服务台有专人提供咨询服务，设专用咨询和投诉电话：62620116。</p>
+                <p>咨询时间：周一、周三至周日及国定假日9:00-17:00</p>
+            </div>
+            </div>
+        </div>
+    </div>
+    <div class="Layout_r fr">
+
+
+
+<div class="Column">
+
+  
+  
+  
+	<a title="参观咨询"
+	   class="on6"
+	  href="/cgfw/cgzx.htm"
+	>参观咨询</a>
+  
+
+
+
+  
+  
+  
+	<a title="场馆日历"
+	  
+	  href="/cgfw/cxyy.htm"
+	>场馆日历</a>
+  
+
+
+
+  
+  
+  
+	<a title="网上售票"
+	  
+	  href="/cgfw/wssp.htm"
+	>网上售票</a>
+  
+
+
+</div>
+<div class="popup-layer" id ="panda-show">
+    <img src="/webpc/images/panda.jpg" width="200"/>
+    <span class="close-btn">&times;</span>
+</div>
+<style>
+.popup-layer {
+    display: none; /* 默认隐藏 */
+    position: absolute;
+    z-index: 1000;
+    border: 1px solid #ccc;
+    background-color: white;
+    padding: 15px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.close-btn {
+    float: right;
+    cursor: pointer;
+}
+</style>
+
+<script>
+$('#panda-pop').click(function(){
+    $('#panda-show').show();
+});
+$('.close-btn').click(function(){
+    $('#panda-show').hide();
+});
+</script>
+
+
+<script type="text/javascript" src="/webpc/js/banner2.js"></script>
+<div class="rdtj" style="display:none;">
+    <div class="rdtj_t">
+ 	  	热点推荐
+    </div>
+    <div class="rdtj_b">
+    	<ul class="focus_c"></ul>
+    </div>
+  </div>
+
+    </div>
+</div>
+
+<div class="foot">
+	<div class="foot_main hack">
+    	<div class="foot_l fl">
+        	<h5><a href="/gywm/bwgjj.htm" title="关于我们">关于我们</a></h5>
+            <ul>
+            	<li><a href="/gywm/lssy.htm" title="历史溯源">历史溯源</a></li>
+                <li><a href="/gywm/bwgjj.htm" title="博物馆简介">博物馆简介</a></li>
+            </ul>
+        </div>
+        <div class="foot_l2 fl">
+        	<h5><a href="/jyhd/index.htm" title="展览活动">展览活动</a></h5>
+            <ul>
+            	<li><a href="/cszl/virtualRoaming.htm" title="虚拟漫游">虚拟漫游</a></li>
+                <li><a href="/cszl/index.htm" title="楼层导览">楼层导览</a></li>
+                <li><a href="/lzdy/lzIndex.htm" title="临时展览">临时展览</a></li>
+                <li><a href="/lzdy/film.htm" title="四维影院">四维影院</a></li>
+            </ul>
+        </div>
+        <div class="foot_c fl">
+        	<h5>相关链接</h5>
+            <div class="foot_c_b">
+              <select class="dropdown" id="friend-link">
+              	<option value="https://www.sstm.org.cn">上海科技馆</option><option value="https://www.sstm-sam.org.cn/#/home">上海天文馆</option>
+              </select>
+            </div>
+            <div class="foot_c_c">
+              <a href="javascript:MBL.loadWjdc();" title="问卷调查" class="fl">问卷调查<img src="/webpc/images/foot_c_c.png" width="6" height="9" /></a>
+              <a href="javascript:MBL.loadTsjy();" title="投诉建议" class="fr">投诉建议<img src="/webpc/images/foot_c_c.png" width="6" height="9" /></a>
+            </div>
+        </div>
+        <div class="foot_r fr">
+        	<h5>获取更多最新消息</h5>
+            <div class="foot_r_c">
+                <a target="_blank" rel="noopener noreferrer"><img src="/webpc/images/foot_r_c_1.png" width="38" height="37" /></a>
+                <a target="_blank" rel="noopener noreferrer" class="foot_r_c_c"><img src="/webpc/images/foot_r_c_2.png" width="38" height="37" /></a>
+                <a target="_blank" rel="noopener noreferrer"><img src="/webpc/images/foot_r_c_3.png" width="38" height="37" /></a>
+            </div>
+        </div>
+    </div>
+    <div class="foot_b">
+    	<p>访问人数</p>
+        <div class="foot_b_c">
+        	<span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+        </div>
+        <div class="foot_main">
+        	<div style="float:left;width: 350px;"><script type="text/javascript">document.write(unescape("%3Cspan id='_ideConac' %3E%3C/span%3E%3Cscript src='//dcs.conac.cn/js/02/000/0000/40270569/CA020000000402705690005.js' type='text/javascript'%3E%3C/script%3E"));</script></div>
+        	<div style="float:left;margin-top:15px;text-align:right;width:540px;">沪公网安备31011502403657号 沪ICP备05019056号 </div>
+        	<div style="float:left;text-align:right;width:540px;">© 2014 上海自然博物馆 Shanghai Natural History Museum 版权所有 </div>
+        </div>
+    </div>
+    <div style="display:none"><object id="RfidTool"  classid="clsid:B6B60DF9-B6E5-4111-99B0-6A4C4ABEC9F5"></object></div>
+</div>
+<script>
+	// 添加认证图标
+	$(function(){
+		$("#_ideConac").append([
+		  '<a target="_blank" href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=31011502403657">',
+		  '<img src="/webpc/images/policy/a1ba0f22.beian.png" style="height:48px">',
+		  '</a>',
+          '<a style="margin-left: 20px; width: 100px;" target="_blank"><img src="/webpc/images/policy/7eacee0ab2f1c979257e0b75671d8f5b.png"></a>'
+		].join(''));
+		$("a[target='_blank']").each(function(){
+		    if(!$(this).attr("rel")){
+		        $(this).attr("rel","noopener noreferrer");
+		    }
+		});
+	});
+	var _hmt = _hmt || [];
+	(function() {
+	  var hm = document.createElement("script");
+	  hm.src = "https://hm.baidu.com/hm.js?0273088ec7cd7738e3598772b371e40a";
+	  var s = document.getElementsByTagName("script")[0]; 
+	  s.parentNode.insertBefore(hm, s);
+	})();
+</script>
+<script type="text/javascript">
+window._AMapSecurityConfig = { securityJsCode: '82fb42fb80c25db8bafde56d72b543d7' };
+</script>
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&amp;key=03a9f9a6400e0fce6fffa001a4dea6d9"></script>
+<script type="text/javascript">
+(function () {
+    if (typeof AMap === 'undefined') {
+        return;
+    }
+    var center = [121.46270, 31.23510];
+    var map = new AMap.Map('mapWrapper', {
+        zoom: 15,
+        center: center,
+        resizeEnable: true
+    });
+    new AMap.Marker({
+        position: center,
+        map: map
+    });
+    map.on('complete', function () {
+        setTimeout(function () {
+            if (typeof map.resize === 'function') {
+                map.resize();
+            }
+        }, 0);
+    });
+})();
+</script>
+<script type="text/javascript">
+$(function () {
+    $.get("//" + MBL.apiUrl + "/webn/cgxx/cgzx" + MBL.urlSuffix, function (o) {
+        if (o.code != 1 || !o.result || !o.result.description) {
+            return;
+        }
+        var description = o.result.description;
+        if (typeof description.replaceAll === "function") {
+            description = description.replaceAll("10.2.10.16:8080", "www.snhm.org.cn")
+                .replaceAll('"uploadFiles', '"' + MBL.museumUrl + "uploadFiles");
+        }
+        $("#cgxxDescription").html(description);
+    });
+});
+</script>
+</body>
+</html>

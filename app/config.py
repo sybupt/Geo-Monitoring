@@ -77,10 +77,11 @@ GEO_RULE_DESC: dict[str, str] = {
 # 新品扶持位：内容排序分超过该阈值才给曝光位
 COLD_SLOT_SCORE = 0.45
 
-# --- LLM 改写（可选） -----------------------------------------------------
-LLM_BASE_URL = os.getenv("GEOREC_LLM_BASE_URL", "https://api.openai.com/v1")
-LLM_API_KEY = os.getenv("GEOREC_LLM_API_KEY", "")
-LLM_MODEL = os.getenv("GEOREC_LLM_MODEL", "gpt-4o-mini")
+# --- LLM 改写（优先读取 .env 中的千问 QWEN_*，兼容 GEOREC_LLM_*） ------------
+LLM_BASE_URL = os.getenv("QWEN_BASE_URL") or os.getenv("GEOREC_LLM_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+LLM_API_KEY = os.getenv("QWEN_KEY") or os.getenv("GEOREC_LLM_API_KEY", "")
+LLM_MODEL = os.getenv("QWEN_MODEL") or os.getenv("GEOREC_LLM_MODEL", "qwen3.8-flash")
+LLM_TIMEOUT = float(os.getenv("MODEL_TIMEOUT_SECONDS", "60"))
 
 
 @dataclass

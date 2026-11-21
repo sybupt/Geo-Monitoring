@@ -261,6 +261,82 @@ G.planText = (p) => {
 
 G.statusPill = (status, label) => `<span class="st st-${status}">${G.esc(label)}</span>`;
 
+/* ---------------- 文章预览弹窗 ---------------- */
+G.mdToHtml = function (md) {
+  const lines = String(md || "").replace(/\r\n/g, "\n").split("\n");
+  const out = [];
+  let inList = false;
+  const inline = (s) => G.esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  for (const raw of lines) {
+    const ln = raw.trim();
+    if (!ln) {
+      if (inList) { out.push("</ul>"); inList = false; }
+      continue;
+    }
+    const h = ln.match(/^(#{1,3})\s+(.+)$/);
+    if (h) {
+      if (inList) { out.push("</ul>"); inList = false; }
+      const lvl = Math.min(4, h[1].length + 1);
+      out.push(`<h${lvl}>${inline(h[2])}</h${lvl}>`);
+      continue;
+    }
+    const li = ln.match(/^(?:[-·•*])\s+(.+)$/);
+    if (li) {
+      if (!inList) { out.push("<ul>"); inList = true; }
+      out.push(`<li>${inline(li[1])}</li>`);
+      continue;
+    }
+    if (inList) { out.push("</ul>"); inList = false; }
+    out.push(`<p>${inline(ln)}</p>`);
+  }
+  if (inList) out.push("</ul>");
+  return out.join("");
+};
+
+G.openPreview = function (opts) {
+  const modal = $("#preview-modal");
+  if (!modal) return;
+  const title = opts.title || "未命名文稿";
+  const body = opts.body || "";
+  $("#pv-title").textContent = title;
+  const bits = [];
+  if (opts.channel) bits.push(`<span class="tag">${G.esc(opts.channel)}</span>`);
+  if (opts.model) bits.push(`<span class="tag geo">${G.esc(opts.model)}</span>`);
+  if (opts.score !== null && opts.score !== undefined) bits.push(`<span class="tag">适配分 ${Number(opts.score).toFixed(1)}</span>`);
+  const chars = body.replace(/\s/g, "").length;
+  bits.push(`<span class="note">${chars} 字</span>`);
+  if (opts.checks && opts.checks.stats) bits.push(`<span class="note">外链 ${opts.checks.stats.links} 个</span>`);
+  $("#pv-meta").innerHTML = bits.join(" ");
+
+  const rich = $("#pv-rich"), raw = $("#pv-raw");
+  rich.innerHTML = G.mdToHtml(body) || '<div class="empty">暂无正文内容</div>';
+  raw.textContent = body;
+  rich.hidden = false;
+  raw.hidden = true;
+  $("#pv-mode-rich").classList.add("on");
+  $("#pv-mode-raw").classList.remove("on");
+  modal.hidden = false;
+
+  if (!G._pvBound) {
+    G._pvBound = true;
+    const close = () => { modal.hidden = true; };
+    $("#pv-close").addEventListener("click", close);
+    modal.addEventListener("click", (ev) => { if (ev.target === modal) close(); });
+    document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && !modal.hidden) close(); });
+    $("#pv-mode-rich").addEventListener("click", () => {
+      rich.hidden = false; raw.hidden = true;
+      $("#pv-mode-rich").classList.add("on"); $("#pv-mode-raw").classList.remove("on");
+    });
+    $("#pv-mode-raw").addEventListener("click", () => {
+      rich.hidden = true; raw.hidden = false;
+      $("#pv-mode-raw").classList.add("on"); $("#pv-mode-rich").classList.remove("on");
+    });
+    $("#pv-copy").addEventListener("click", () => {
+      navigator.clipboard.writeText(raw.textContent).then(() => G.toast("正文已复制到剪贴板"));
+    });
+  }
+};
+
 /* ---------------- 启动 ---------------- */
 G.boot = async function () {
   try {
