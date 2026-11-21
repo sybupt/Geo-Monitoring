@@ -8,6 +8,8 @@ venv/
 # 密钥（绝不提交）
 .env
 .env.local
+.env.*
+!.env.example
 
 # SQLite 运行时数据（app 启动时自动创建并 seed）
 *.db

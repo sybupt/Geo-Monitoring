@@ -71,20 +71,22 @@ const QuestionsView = (() => {
         const cells = models.map((m) => {
           const v = d.matrix[`${m.id}::${dim}`];
           if (v) sum += v.hit_rate;
-          return `<td class="num">${v ? G.pct(v.hit_rate) : "—"}</td>`;
+          const style = v ? G.heatStyle(v.hit_rate) : "";
+          return `<td class="num heat-cell" style="${style}">${v ? `<span>${G.pct(v.hit_rate)}</span>` : "—"}</td>`;
         }).join("");
         const n = models.length || 1;
+        const avg = sum / n;
         return `<tr><td><b>${G.esc(dimLabel(dim))}</b></td>${cells}
-          <td class="num muted">${G.pct(sum / n)}</td></tr>`;
+          <td class="num"><div class="cell-bar"><span>${G.pct(avg)}</span>${G.bar(avg)}</div></td></tr>`;
       }).join("");
       const overall = d.models.map((mid) => {
         const vals = d.dimensions.map((dim) => (d.matrix[`${mid}::${dim}`] || {}).hit_rate).filter((v) => v !== undefined);
         const avg = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-        return `<td class="num"><b>${avg === null ? "—" : G.pct(avg)}</b></td>`;
+        return `<td class="num" style="${avg !== null ? G.heatStyle(avg) : ""}"><b>${avg === null ? "—" : G.pct(avg)}</b></td>`;
       }).join("");
       box.innerHTML = `
         <table><thead>${head}</thead><tbody>${rows}
-          <tr><td><b>模型均值</b></td>${overall}<td class="num muted">—</td></tr>
+          <tr class="summary-row"><td><b>模型均值</b></td>${overall}<td class="num muted">—</td></tr>
         </tbody></table>
         <div class="note" style="margin-top:10px">
           基线 = 该维度问法在对应模型下，目标物原稿被引用的比例（全渠道通用）。

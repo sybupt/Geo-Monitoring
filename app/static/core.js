@@ -169,29 +169,50 @@ G.loadProgress = async function () {
     ]);
     const chTotal = mem ? mem.channels.length : 6;
     const steps = [
-      ["目标已选", true],
-      ["问题集", p.question_set_dims > 0, `${p.question_set_dims} 个维度`],
-      ["基线", p.baseline_models > 0, `${p.baseline_models}/${G.catalog ? G.catalog.models.length : 6} 模型`],
+      ["目标已选", true, "当前目标物已选定", "rec"],
+      ["问题集", p.question_set_dims > 0, `${p.question_set_dims} 个维度`, "questions"],
+      ["基线", p.baseline_models > 0, `${p.baseline_models}/${G.catalog ? G.catalog.models.length : 6} 模型`, "questions"],
       ["规则", p.learned_models >= (G.catalog ? G.catalog.models.length : 6),
-        `${p.learned_models} 模型已学`],
-      ["改写", p.approved_channels > 0, `${p.approved_channels}/${chTotal} 渠道过审`],
-      ["投喂", p.feed_channels > 0, `${p.feed_channels} 渠道`],
-      ["复测", p.recheck_channels > 0, `${p.recheck_channels} 渠道`],
+        `${p.learned_models} 模型已学`, "rules"],
+      ["改写", p.approved_channels > 0, `${p.approved_channels}/${chTotal} 渠道过审`, "optimize"],
+      ["投喂", p.feed_channels > 0, `${p.feed_channels} 渠道`, "feed"],
+      ["复测", p.recheck_channels > 0, `${p.recheck_channels} 渠道`, "board"],
     ];
-    box.innerHTML = steps.map(([label, done, extra]) => `
-      <span class="pstep ${done ? "done" : ""}" title="${G.esc(extra || "")}">
+    box.innerHTML = steps.map(([label, done, extra, view]) => `
+      <button type="button" class="pstep ${done ? "done" : ""} ${G.current === view ? "current" : ""}"
+              data-goto="${view}" title="${G.esc(extra || label)}（点击跳转）">
         <i>${done ? "✓" : "○"}</i>${G.esc(label)}
-      </span>`).join("");
+      </button>`).join("");
+    $$("#ctx-progress .pstep[data-goto]").forEach((el) => {
+      el.addEventListener("click", () => G.open(el.dataset.goto));
+    });
   } catch (e) {
     box.innerHTML = "";
   }
 };
 
 /* ---------------- 导航 ---------------- */
+const PAGE_META = {
+  members: ["会员管理", "生态位台账：管理企业主体、推广对象（品牌/产品）、套餐等级与投放渠道权限"],
+  rec: ["推荐流 · 生态位总览", "盘点企业真实力、内容质量分（GQS）与各模型×渠道下的竞争现状"],
+  questions: ["测试问题集 · 需求镜像", "按行业生成多维度真实用户问法，一键测量全模型提及率基线"],
+  rules: ["规则与矩阵 · 模型偏好", "6 模型 × 11 渠道规则权重学习（AUC）与 AutoGEO 可执行检查器"],
+  optimize: ["内容体检与改写 · 实力显影", "结合目标画像、已学规则与渠道硬约束，生成并审核高适配投喂稿"],
+  feed: ["引导投喂 · 有意义投喂", "按权威页→社区扩散排期执行投放，登记回填链接与时长并触发复测"],
+  board: ["效果看板 · 生态位复测", "同一批问法投喂前后提及率对比、z 检验显著性归因与趋势追踪"],
+};
+
 G.open = function (name) {
   G.current = name;
   $$("#tabs button").forEach((b) => b.classList.toggle("active", b.dataset.view === name));
   $$(".view").forEach((v) => v.classList.toggle("active", v.id === `view-${name}`));
+  $$("#ctx-progress .pstep").forEach((p) => p.classList.toggle("current", p.dataset.goto === name));
+  const meta = PAGE_META[name];
+  if (meta) {
+    const t = $("#page-title"), s = $("#page-sub");
+    if (t) t.textContent = meta[0];
+    if (s) s.textContent = meta[1];
+  }
   if (location.hash.slice(1) !== name) history.replaceState(null, "", `#${name}`);
   const v = G.views[name];
   if (!v) return;
@@ -206,8 +227,16 @@ G.register = function (name, mod) { G.views[name] = mod; };
 
 /* ---------------- 小部件 ---------------- */
 G.scoreBadge = (score, low = 55) => {
-  const cls = score >= 85 ? "A" : score >= 70 ? "B" : score >= low ? "C" : "D";
-  return `<span class="gqs-badge g-${cls}">${Number(score).toFixed(0)}</span>`;
+  const n = Number(score);
+  const cls = n >= 85 ? "A" : n >= 70 ? "B" : n >= low ? "C" : "D";
+  return `<span class="gqs-badge g-${cls}" title="GQS 内容质量分 ${n.toFixed(1)}（${cls} 级）"><em>${cls}</em>${n.toFixed(0)}</span>`;
+};
+
+G.heatStyle = (ratio) => {
+  if (ratio === null || ratio === undefined || Number.isNaN(Number(ratio))) return "";
+  const r = Math.max(0, Math.min(1, Number(ratio)));
+  const alpha = (0.04 + r * 0.24).toFixed(3);
+  return `background:rgba(15,110,82,${alpha});`;
 };
 
 G.bar = (v, cls = "") => `

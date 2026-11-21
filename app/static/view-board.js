@@ -11,10 +11,10 @@ const BoardView = (() => {
 
   function renderModels() {
     const box = G.$("#bd-models");
-    box.innerHTML = G.catalog.models.map((m) =>
-      `<button class="chip${m.id === G.state.model ? " geo" : ""}" data-m="${m.id}">
+    box.innerHTML = (G.catalog ? G.catalog.models : []).map((m) =>
+      `<button class="chip-btn${m.id === G.state.model ? " on" : ""}" data-m="${m.id}">
         ${G.esc(m.name)}</button>`).join("") +
-      `<span class="note" style="margin-left:6px">看板按模型查看，点上面切换</span>`;
+      `<span class="note" style="margin-left:6px;align-self:center">看板按模型查看，点击切换</span>`;
   }
 
   async function load() {

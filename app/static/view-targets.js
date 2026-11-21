@@ -214,7 +214,8 @@ const TargetsView = (() => {
           ${geo.rules.map((r) => `
             <div class="rule-chip ${r.score < 0.5 ? "bad" : r.score < 0.75 ? "warn" : "ok"}"
                  title="${G.esc(r.hint)}">
-              <span>${G.esc(r.label)}</span><b>${r.score.toFixed(2)}</b>
+              <div class="rc-top"><span>${G.esc(r.label)}</span><b>${r.score.toFixed(2)}</b></div>
+              <div class="rc-bar"><i style="width:${Math.max(4, Math.min(100, r.score * 100))}%"></i></div>
             </div>`).join("")}
         </div>
       </div>

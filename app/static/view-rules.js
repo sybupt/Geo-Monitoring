@@ -19,8 +19,8 @@ const RulesView = (() => {
             <td><b>${G.esc(r.label)}</b><div class="note">${G.esc(r.key)}</div></td>
             <td class="desc">${G.esc(r.desc)}</td>
             <td class="num">${r.weight.toFixed(2)}</td>
-            <td class="num">${r.avg_score.toFixed(2)}</td>
-            <td class="num">${G.pct(r.pass_rate)}</td>
+            <td class="num"><div class="cell-bar"><span>${r.avg_score.toFixed(2)}</span>${G.bar(r.avg_score)}</div></td>
+            <td class="num"><div class="cell-bar"><span>${G.pct(r.pass_rate)}</span>${G.bar(r.pass_rate)}</div></td>
             <td class="num" style="color:${r.fail_rate > 0.4 ? "var(--warn)" : "inherit"}">${G.pct(r.fail_rate)}</td>
           </tr>`).join("")}</tbody>
         </table>
@@ -87,9 +87,12 @@ const RulesView = (() => {
         const cell = by[`${m.id}::${c.id}`] || {};
         const on = cell.learned;
         const active = m.id === G.state.model && c.id === G.state.channel ? " active" : "";
-        html += `<td><button class="mx-cell ${on ? "on" : "off"}${active}" data-m="${m.id}" data-c="${c.id}"
-          title="${on ? `v${cell.version} · ${cell.samples} 样本 · AUC ${Number(cell.auc).toFixed(3)}` : "未学习"}">
-          ${on ? `<b>v${cell.version}</b><span>AUC ${Number(cell.auc).toFixed(2)}</span>` : "<span>未学</span>"}
+        const auc = on ? Number(cell.auc) : 0;
+        const norm = on ? Math.max(0, Math.min(1, (auc - 0.5) / 0.45)) : 0;
+        const heat = on ? `style="background:rgba(15,110,82,${(0.06 + norm * 0.22).toFixed(3)})"` : "";
+        html += `<td><button class="mx-cell ${on ? "on" : "off"}${active}" data-m="${m.id}" data-c="${c.id}" ${heat}
+          title="${on ? `v${cell.version} · ${cell.samples} 样本 · AUC ${auc.toFixed(3)}` : "未学习"}">
+          ${on ? `<b>AUC ${auc.toFixed(2)}</b><span>v${cell.version} · ${cell.samples}样本</span><i class="mx-mini"><em style="width:${Math.round(25 + norm * 75)}%"></em></i>` : "<span>未学</span>"}
         </button></td>`;
       });
       html += "</tr>";
